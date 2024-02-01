@@ -38,13 +38,13 @@ const newsubmissionData = async (req, res, next) => {
 
 const displayArticle = async (req,res,next) => {
   try{ 
-    const article = await Articlesubmission.findOne({item_id:req.params.id});
+    const article = await Articlesubmission.findOne({item_id:req.params.id},'-fileUrl');
     let view = article.views;
     Articlesubmission.updateOne({item_id:req.params.id},{$set:{views:view+1}}, 
       function(err, results) {
         console.log(results.result);
     });
-    const updatedArticle = await Articlesubmission.findOne({item_id:req.params.id});
+    const updatedArticle = await Articlesubmission.findOne({item_id:req.params.id},'-fileUrl');
     console.log('find new article data '+updatedArticle);
       res.json(JSON.stringify(updatedArticle));
 } catch (error) {
@@ -61,7 +61,7 @@ const downloadArticle = async (req,res,next) => {
       function(err, results) {
         console.log(results.result);
     });
-    const updatedArticle = await Articlesubmission.findOne({item_id:req.params.id});
+    const updatedArticle = await Articlesubmission.findOne({item_id:req.params.id},'-fileUrl');
     console.log('download Article '+updatedArticle);
       res.json(JSON.stringify(updatedArticle));
 } catch (error) {
@@ -123,7 +123,7 @@ const getArticlesData = async (req,res,next) => {
 
 const getDownloadData = async (req,res,next) => {
   try{
-    const articles = await Articlesubmission.find({}).sort({"downloads":-1,"item_id":1});
+    const articles = await Articlesubmission.find({}).sort({"downloads":-1,"item_id":1},'-fileUrl');
     let data = [];
     articles.forEach(function(ff){
       if(ff.isTrue && ff.isTrue==true ) {
@@ -139,7 +139,7 @@ const getDownloadData = async (req,res,next) => {
 
 const getViewsData = async (req,res,next) => {
   try{
-    const articles = await Articlesubmission.find({}).sort({"views":-1,"item_id":1});
+    const articles = await Articlesubmission.find({}).sort({"views":-1,"item_id":1},'-fileUrl');
     let data = [];
     articles.forEach(function(ff){
       if(ff.isTrue && ff.isTrue==true ) {
