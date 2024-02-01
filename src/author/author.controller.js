@@ -106,17 +106,17 @@ const newfilesubmissionData = async (req, res, next) => {
 };
 const getArticlesData = async (req,res,next) => {
   try{
-    const articles = await Articlesubmission.find({});
+    const articles = await Articlesubmission.find({},'-fileUrl');
     let data = [];
     articles.forEach(function(ff){
       if(ff.isTrue && ff.isTrue==true ) {
-        ff.fileUrl = undefined;
         data.push(ff);
       }
     });
-    console.log(data);
+    // console.log(data);
     res.json(data);
   }catch(err){
+    console.log(err);
     next(err);
   }
 };
