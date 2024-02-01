@@ -1,7 +1,6 @@
 const express = require('express');
 const upload=require("../utilities/multer");
 const controller = require('./author.controller');
-const authmiddlewares = require('../auth/auth.middlewares');
 const router = express.Router();
 var bodyParser = require('body-parser')
 
@@ -15,10 +14,9 @@ router.get('/', controller.get);
 
 router.post(
   '/newsubmission', jsonParser,
-  authmiddlewares.checkTokenSetUser,
-  authmiddlewares.isLoggedIn,
   controller.newsubmissionData,
 );
+
 router.post(
   '/newfilesubmission', jsonParser,upload.single("image"),
   controller.newfilesubmissionData,
@@ -53,13 +51,9 @@ router.get('/articles/:id', jsonParser,
  controller.displayArticle);
 
 router.get('/newsubmission/:id', jsonParser,
-  authmiddlewares.checkTokenSetUser,
-  authmiddlewares.findNewsubmission(defaultLoginError, (user) => !(user))
 );
 
 router.get('/newfilesubmission/:id', jsonParser,
- // authmiddlewares.checkTokenSetUser,
-  authmiddlewares.findNewfilesubmission(defaultLoginError, (user) => !(user))
 );
 
 router.get('/downloads/:id',jsonParser, controller.downloadArticle);

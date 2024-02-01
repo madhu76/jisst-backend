@@ -29,9 +29,6 @@ const articlesubmissionSchema = new mongoose.Schema(
         fileId:{
             type:String
         },
-        fileUrl: {
-            type:String
-        },
         isTrue: {
             type:Boolean,
             default:false,

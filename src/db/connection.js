@@ -3,8 +3,7 @@ mongoose.Promise = Promise;
 
 let dbOptions = {useCreateIndex: true, useNewUrlParser: true, useUnifiedTopology: true, auto_reconnect: true};
 
-mongoose.connect("mongodb+srv://fsrti:fsrti@cluster0.g5swe.mongodb.net/eps?retryWrites=true&w=majority", dbOptions);
-
+mongoose.connect(process.env.MongoDb_ConnStr, dbOptions);
 
 mongoose.connection.on('connected', function(){
 

@@ -110,6 +110,7 @@ const getArticlesData = async (req,res,next) => {
     let data = [];
     articles.forEach(function(ff){
       if(ff.isTrue && ff.isTrue==true ) {
+        ff.fileUrl = undefined;
         data.push(ff);
       }
     });
