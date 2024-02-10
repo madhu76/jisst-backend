@@ -3,7 +3,7 @@ const multer = require('multer');
 const controller = require('./data.controller');
 const router = express.Router();
 var bodyParser = require('body-parser')
-const upload = multer({ dest: 'uploads/' });
+const upload = multer({ dest: 'tmp/' });
 
 // create application/json parser
 
