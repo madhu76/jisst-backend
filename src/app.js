@@ -1,8 +1,9 @@
 const express = require('express');
 const app = express();
 const cors = require('cors')
-const author = require('./author/author.routes');
-const mongoose = require('./db/connection') //DB connection
+const data = require('./author/data.routes');
+const mongoose = require('./db/connection'); //DB connection
+const { sendMail } = require('./utilities/emailService');
 
 app.use(cors());
 app.get('/', (req, res) => {
@@ -12,6 +13,6 @@ app.get('/', (req, res) => {
 });
 app.use(
   '/author',
-  author,
+  data,
 );
 module.exports = app;
