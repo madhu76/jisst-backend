@@ -16,14 +16,14 @@ const successfulSubmissionEmailTemplate = (submissionId) => {
   return `Your manuscript has been submitted successfully!<br>
 You can track the status of your manuscript from https://www.jisst.com/my-submissions.<br>
 <br>
-Your submission ID is: ${submissionId}<br>
+Your Manuscript No. is: ${submissionId}<br>
 <br>
 Regards,<br>
 JISST Team`;
 }
 
 const statusUpdateEmailTemplate = (submissionId, status, title) => {
-  return `Your manuscript with ID ${submissionId} has been updated to status: ${status}.<br>
+  return `Your manuscript with Manuscript No. ${submissionId} has been updated to status: ${status}.<br>
 Title: ${title}<br>
 <br>
 You can track the status of your manuscript from https://www.jisst.com/my-submissions.<br>
@@ -208,19 +208,23 @@ const submitManuscript = async (req, res) => {
       abstract: req.body.abstract,
       keywords: req.body.keywords,
       status: 'Submitted',
-      articleUrl: result.url // URL from Cloudinary
+      articleUrl: result.url, // URL from Cloudinary
+      correspondingAuthorName: req.body.correspondingAuthorName,
+      correspondingAuthorEmail: req.body.correspondingAuthorEmail,
+      articleAuthorEmails: req.body.articleAuthorEmails,
+      submissionFor: req.body.submissionFor
     });
 
     const resp = await newArticle.save();
 
-    const emailList =  await AllowedEmailAddresses.findOne({ 'ManuscriptMailingList.Name': 'Editors' }, { 'ManuscriptMailingList.$': 1 })
-    .then(doc => {
-      if (doc && doc.ManuscriptMailingList.length > 0) {
-        // Assuming there could be multiple matches and you want the first
-        return emailIds = doc.ManuscriptMailingList[0].EmailIds;
-      }
-      return [];
-    });
+    const emailList = await AllowedEmailAddresses.findOne({ 'ManuscriptMailingList.Name': 'Editors' }, { 'ManuscriptMailingList.$': 1 })
+      .then(doc => {
+        if (doc && doc.ManuscriptMailingList.length > 0) {
+          // Assuming there could be multiple matches and you want the first
+          return emailIds = doc.ManuscriptMailingList[0].EmailIds;
+        }
+        return [];
+      });
 
     // join email list as a comma separated string
     const ccString = emailList.join(', ');
@@ -248,10 +252,15 @@ const getManuscripts = async (req, res) => {
     let manuscripts = [];
     if (!isAdmin) {
       manuscripts = await ManuscriptSubmissions.find({ submittedBy: email }, '_id title authors status').exec();
+      let coAuthorManuscripts = await ManuscriptSubmissions.find({
+        articleAuthorEmails: { $in: [email] }
+      }, '_id title authors status').exec();
+
+      manuscripts = manuscripts.concat(coAuthorManuscripts);
     }
     else {
       manuscripts = await ManuscriptSubmissions.find({}).exec();
-    }    
+    }
 
     // Respond with the list of manuscripts
     res.status(200).json({ submissions: manuscripts, isAdmin: isAdmin });
