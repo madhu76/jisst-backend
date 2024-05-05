@@ -250,10 +250,12 @@ const getManuscripts = async (req, res) => {
 
     let manuscripts = [];
     if (!isAdmin) {
-      manuscripts = await ManuscriptSubmissions.find({ submittedBy: email }, '_id title authors status').exec();
+      manuscripts = await ManuscriptSubmissions.find({ submittedBy: email }, '_id title authors status submissionFor').exec();
       let coAuthorManuscripts = await ManuscriptSubmissions.find({
-        articleAuthorEmails: { $in: [email] }
-      }, '_id title authors status').exec();
+        articleAuthorEmails: {
+          $regex: new RegExp(`\\b${email}\\b`, 'i')
+        }
+      }, '_id title authors status submissionFor').exec();
 
       manuscripts = manuscripts.concat(coAuthorManuscripts);
     }
