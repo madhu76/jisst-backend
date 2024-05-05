@@ -210,7 +210,6 @@ const submitManuscript = async (req, res) => {
       status: 'Submitted',
       articleUrl: result.url, // URL from Cloudinary
       correspondingAuthorName: req.body.correspondingAuthorName,
-      correspondingAuthorEmail: req.body.correspondingAuthorEmail,
       articleAuthorEmails: req.body.articleAuthorEmails,
       submissionFor: req.body.submissionFor
     });
