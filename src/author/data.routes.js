@@ -37,4 +37,29 @@ router.post('/manuscript',upload.single('file'), controller.submitManuscript);
 
 router.patch('/manuscript/:id',jsonParser, controller.updateManuscript);
 
+
+// Post Calls for Admin
+
+router.post(
+  '/newsubmission', jsonParser,
+  authmiddlewares.checkTokenSetUser,
+  authmiddlewares.isLoggedIn,
+  controller.newsubmissionData,
+);
+router.post(
+  '/newfilesubmission', jsonParser,upload.single("image"),
+  controller.newfilesubmissionData,
+);
+
+router.post(
+  '/articlefilesubmission', jsonParser,upload.single("article"),
+  controller.articleFileSubmission,
+);
+
+router.post(
+  '/articlesubmission', jsonParser,
+  controller.articleSubmissionData,
+);
+
+
 module.exports = router;
