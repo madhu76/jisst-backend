@@ -42,8 +42,6 @@ router.patch('/manuscript/:id',jsonParser, controller.updateManuscript);
 
 router.post(
   '/newsubmission', jsonParser,
-  authmiddlewares.checkTokenSetUser,
-  authmiddlewares.isLoggedIn,
   controller.newsubmissionData,
 );
 router.post(
