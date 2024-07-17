@@ -227,6 +227,7 @@ const submitManuscript = async (req, res) => {
 
     // join email list as a comma separated string
     const ccString = emailList.join(', ');
+    ccString += `, ${newArticle.articleAuthorEmails}`;
 
     await sendMail(email, ccString, `Manuscript Submitted`, successfulSubmissionEmailTemplate(resp._id));
 
@@ -288,7 +289,18 @@ const updateManuscript = async (req, res) => {
     const status = req.body.status;
     const result = await ManuscriptSubmissions.findByIdAndUpdate(submissionId, { status: status });
     // Send mail for updated status to the author
-    await sendMail(email, '', `Submission Status Updated`, statusUpdateEmailTemplate(submissionId, status, result.title));
+    const emailList = await AllowedEmailAddresses.findOne({ 'ManuscriptMailingList.Name': 'Editors' }, { 'ManuscriptMailingList.$': 1 })
+      .then(doc => {
+        if (doc && doc.ManuscriptMailingList.length > 0) {
+          // Assuming there could be multiple matches and you want the first
+          return emailIds = doc.ManuscriptMailingList[0].EmailIds;
+        }
+        return [];
+      });
+      const ccString = emailList.join(', ');
+      ccString += `, ${result.articleAuthorEmails}`;
+      
+    await sendMail(result.submittedBy,ccString , `Submission Status Updated`, statusUpdateEmailTemplate(submissionId, status, result.title));
 
     res.status(200).json(result);
   }
