@@ -226,15 +226,17 @@ const submitManuscript = async (req, res) => {
       });
 
     // join email list as a comma separated string
-    const ccString = emailList.join(', ');
-    ccString += `, ${newArticle.articleAuthorEmails}`;
+    let ccString = emailList.join(', ');
+    // append author emails to cc list if not empty or null
+    if (resp.articleAuthorEmails)
+      ccString += `, ${resp.articleAuthorEmails}`;
 
     await sendMail(email, ccString, `Manuscript Submitted`, successfulSubmissionEmailTemplate(resp._id));
 
     res.status(201).json({ submissionId: resp._id });
   } catch (error) {
     console.error('Error submitting article:', error);
-    res.status(500).json({ message: 'Error submitting article' });
+    res.status(500).json({ message: 'Error submitting article'+ error });
   }
 };
 
@@ -297,8 +299,10 @@ const updateManuscript = async (req, res) => {
         }
         return [];
       });
-      const ccString = emailList.join(', ');
-      ccString += `, ${result.articleAuthorEmails}`;
+      let ccString = emailList.join(', ');
+      // append author emails to cc list if not empty or null
+      if (result.articleAuthorEmails)
+        ccString += `, ${result.articleAuthorEmails}`;
       
     await sendMail(result.submittedBy,ccString , `Submission Status Updated`, statusUpdateEmailTemplate(submissionId, status, result.title));
 
@@ -306,7 +310,7 @@ const updateManuscript = async (req, res) => {
   }
   catch (error) {
     console.error('Error updating manuscript:', error);
-    res.status(500).json({ message: 'Error updating manuscript' });
+    res.status(500).json({ message: 'Error updating manuscript'+error });
   }
 }
 
