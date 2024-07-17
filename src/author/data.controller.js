@@ -201,7 +201,7 @@ const submitManuscript = async (req, res) => {
     });
     const generateCustomId = () => {
       const now = new Date();
-      return format(now, 'yyyy-MM-dd-HH:mm');
+      return now.getUTCFullYear().toString() +'-'+ (now.getUTCMonth()).toString() + '-' + now.getUTCDate().toString() +'_'+ now.getUTCHours().toString() + '-' + now.getUTCMinutes().toString() +'-' + now.getUTCSeconds().toString();
     };
     
     const customId = generateCustomId();
