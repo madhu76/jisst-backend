@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const manuscriptSubmissionSchema = new mongoose.Schema({
+  _id: {type:String, required:true},
   submittedBy: String,
   title: String,
   authors: String,

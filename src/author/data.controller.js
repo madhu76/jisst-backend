@@ -199,9 +199,16 @@ const submitManuscript = async (req, res) => {
     const result = await cloudinary.uploader.upload(req.file.path, {
       folder: 'ManuscriptSubmissions'
     });
+    const generateCustomId = () => {
+      const now = new Date();
+      return format(now, 'yyyy-MM-dd-HH:mm');
+    };
+    
+    const customId = generateCustomId();
 
     // Create and save the article
     const newArticle = new ManuscriptSubmissions({
+      _id: customId,
       submittedBy: email,
       title: req.body.title,
       authors: req.body.authors,
