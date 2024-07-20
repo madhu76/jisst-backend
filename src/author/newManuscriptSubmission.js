@@ -11,7 +11,9 @@ const manuscriptSubmissionSchema = new mongoose.Schema({
   articleUrl: String, // URL to the uploaded file on Cloudinary
   correspondingAuthorName: String,
   articleAuthorEmails: String,
-  submissionFor: String
+  submissionFor: String,
+  reviewUrls: [String],
+  revisionUrls: [String],
 }, { timestamps: true });
 
 const ManuscriptSubmissions = mongoose.model('ManuscriptSubmissions', manuscriptSubmissionSchema);

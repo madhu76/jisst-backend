@@ -199,12 +199,21 @@ const submitManuscript = async (req, res) => {
     const result = await cloudinary.uploader.upload(req.file.path, {
       folder: 'ManuscriptSubmissions'
     });
-    const generateCustomId = () => {
-      const now = new Date();
-      return now.getUTCFullYear().toString() +'-'+ (now.getUTCMonth()).toString() + '-' + now.getUTCDate().toString() +'_'+ now.getUTCHours().toString() + '-' + now.getUTCMinutes().toString() +'-' + now.getUTCSeconds().toString();
+    const generateCustomId = async () => {
+      //Get Latest _Id in the format <year>-<number> and increment the <number> by 1
+      let year = new Date().getFullYear().toString().slice(-2);
+      let latestResult = await ManuscriptSubmissions.findOne({}, { _id: 1 }, { sort: { createdAt: -1 } });
+      let latestId = latestResult._id;
+      let latestYear = latestId.split('-')[0];
+      let latestNumber = latestId.split('-')[1];
+      if (year !== latestYear) {
+        return `${year}-0001`;
+      }
+      let newNumber = parseInt(latestNumber) + 1;
+      return `${year}-${newNumber.toString().padStart(4, '0')}`;
     };
-    
-    const customId = generateCustomId();
+
+    const customId = await generateCustomId();
 
     // Create and save the article
     const newArticle = new ManuscriptSubmissions({
@@ -214,7 +223,7 @@ const submitManuscript = async (req, res) => {
       authors: req.body.authors,
       abstract: req.body.abstract,
       keywords: req.body.keywords,
-      status: 'Submitted',
+      status: 'Submission Received',
       articleUrl: result.url, // URL from Cloudinary
       correspondingAuthorName: req.body.correspondingAuthorName,
       articleAuthorEmails: req.body.articleAuthorEmails,
@@ -243,7 +252,7 @@ const submitManuscript = async (req, res) => {
     res.status(201).json({ submissionId: resp._id });
   } catch (error) {
     console.error('Error submitting article:', error);
-    res.status(500).json({ message: 'Error submitting article'+ error });
+    res.status(500).json({ message: 'Error submitting article' + error });
   }
 };
 
@@ -260,7 +269,7 @@ const getManuscripts = async (req, res) => {
 
     let manuscripts = [];
     if (!isAdmin) {
-      manuscripts = await ManuscriptSubmissions.find({ submittedBy: email }, '_id title authors status submissionFor').exec();
+      manuscripts = await ManuscriptSubmissions.find({ submittedBy: email }).exec();
       let coAuthorManuscripts = await ManuscriptSubmissions.find({
         articleAuthorEmails: {
           $regex: new RegExp(`\\b${email}\\b`, 'i')
@@ -280,6 +289,48 @@ const getManuscripts = async (req, res) => {
     res.status(500).json({ message: 'Error fetching manuscripts' });
   }
 };
+const submitRevision = async (req, res) => {
+  try {
+
+    const email = extractEmailFromToken(req, res);
+    if (res.statusCode === 401)
+      return;
+    // return error if not author
+    if (email != req.body.submittedBy) {
+      res.status(401).json({ message: 'Unauthorized to submit revision' });
+      return;
+    }
+
+    //Upload file to Cloudinary
+    const revisionUploadResult = await cloudinary.uploader.upload(req.file.path, {
+      folder: 'ManuscriptSubmissions'
+    });
+
+    const submissionId = req.params.id;
+    const result = await ManuscriptSubmissions.findByIdAndUpdate(submissionId, {  $push: { revisionUrls: revisionUploadResult.url } });
+
+    // Send mail for updated status to the editor
+    const emailList = await AllowedEmailAddresses.findOne({ 'ManuscriptMailingList.Name': 'Editors' }, { 'ManuscriptMailingList.$': 1 })
+    .then(doc => {
+      if (doc && doc.ManuscriptMailingList.length > 0) {
+        // Assuming there could be multiple matches and you want the first
+        return emailIds = doc.ManuscriptMailingList[0].EmailIds;
+      }
+      return [];
+    });
+
+    const toString = emailList.join(', ');
+
+    await sendMail(toString, email, `Revision Submitted`, `Revision for Manuscript No. ${submissionId} has been submitted by the author. Please review the revision.`);
+    res.status(200).json(result);
+
+  }
+  catch (error) {
+    console.error('Error submitting article:', error);
+    res.status(500).json({ message: 'Error submitting article' + error });
+  }
+}
+
 
 const updateManuscript = async (req, res) => {
   try {
@@ -296,7 +347,24 @@ const updateManuscript = async (req, res) => {
 
     const submissionId = req.params.id;
     const status = req.body.status;
-    const result = await ManuscriptSubmissions.findByIdAndUpdate(submissionId, { status: status });
+    let result = null;
+    if (status === 'Under Revision') {
+      const reviewUrls = [];
+      // Loop thorough req.files and upload each file to Cloudinary and wait for the entire process to complete
+      for (let i = 0; i < req.files.length; i++) {
+        const file = req.files[i];
+        const uploadResult = await cloudinary.uploader.upload(file.path, {
+          folder: 'ManuscriptSubmissions'
+        });
+        reviewUrls.push(uploadResult.url);
+      }
+
+      result = await ManuscriptSubmissions.findByIdAndUpdate(submissionId, { status: status, $push: { reviewUrls: reviewUrls } });
+    }
+    else {
+      result = await ManuscriptSubmissions.findByIdAndUpdate(submissionId, { status: status });
+    }
+
     // Send mail for updated status to the author
     const emailList = await AllowedEmailAddresses.findOne({ 'ManuscriptMailingList.Name': 'Editors' }, { 'ManuscriptMailingList.$': 1 })
       .then(doc => {
@@ -306,18 +374,18 @@ const updateManuscript = async (req, res) => {
         }
         return [];
       });
-      let ccString = emailList.join(', ');
-      // append author emails to cc list if not empty or null
-      if (result.articleAuthorEmails)
-        ccString += `, ${result.articleAuthorEmails}`;
-      
-    await sendMail(result.submittedBy,ccString , `Submission Status Updated`, statusUpdateEmailTemplate(submissionId, status, result.title));
+    let ccString = emailList.join(', ');
+    // append author emails to cc list if not empty or null
+    if (result.articleAuthorEmails)
+      ccString += `, ${result.articleAuthorEmails}`;
+
+    await sendMail(result.submittedBy, ccString, `Submission Status Updated`, statusUpdateEmailTemplate(submissionId, status, result.title));
 
     res.status(200).json(result);
   }
   catch (error) {
     console.error('Error updating manuscript:', error);
-    res.status(500).json({ message: 'Error updating manuscript'+error });
+    res.status(500).json({ message: 'Error updating manuscript' + error });
   }
 }
 
@@ -362,7 +430,7 @@ const newsubmissionData = async (req, res, next) => {
 
   try {
     req.body.ref_id = req.userId;
-    this.id=req.userId;
+    this.id = req.userId;
     console.log(`ref id` + req.body.ref_id);
 
     let newsubmission = new Newsubmission(req.body);
@@ -388,7 +456,7 @@ const newsubmissionData = async (req, res, next) => {
 const newfilesubmissionData = async (req, res, next) => {
 
   try {
-    req.body.ref_id = this.id ;
+    req.body.ref_id = this.id;
     console.log(`ref id` + req.body.ref_id);
     let result;
     if (req.file)
@@ -400,7 +468,7 @@ const newfilesubmissionData = async (req, res, next) => {
     let newfilesubmission = new NewFilesubmission({
       avatar: result.secure_url,
       cloudinary_id: result.public_id,
-      ref_id:this.id,
+      ref_id: this.id,
     });
     console.log(`data` + newfilesubmission);
     newfilesubmission.save((err, newuser) => {
@@ -428,6 +496,7 @@ module.exports = {
   displayArticle,
   downloadArticle,
   submitManuscript,
+  submitRevision,
   getManuscripts,
   updateManuscript,
   newsubmissionData,

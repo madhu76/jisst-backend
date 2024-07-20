@@ -35,7 +35,9 @@ router.get('/manuscript',jsonParser, controller.getManuscripts);
 
 router.post('/manuscript',upload.single('file'), controller.submitManuscript);
 
-router.patch('/manuscript/:id',jsonParser, controller.updateManuscript);
+router.patch('/manuscript/:id',upload.array('files'), controller.updateManuscript);
+
+router.patch('/manuscript/revision/:id',upload.single('file'), controller.submitRevision);
 
 
 // Post Calls for Admin
