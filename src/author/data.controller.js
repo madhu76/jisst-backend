@@ -12,24 +12,42 @@ const get = (req, res) => {
   });
 };
 
-const successfulSubmissionEmailTemplate = (submissionId) => {
-  return `Your manuscript has been submitted successfully!<br>
-You can track the status of your manuscript from https://www.jisst.com/my-submissions.<br>
+const successfulSubmissionEmailTemplate = (submissionId, title, authorNames, correspondingAuthorName) => {
+  return `Dear Authors,
 <br>
-Your Manuscript No. is: ${submissionId}<br>
+The following manuscript has been submitted successfully for possible publication in JISST!
 <br>
-Regards,<br>
-JISST Team`;
+TITLE: ${title} 
+<br>
+AUTHORS: ${correspondingAuthorName},${authorNames}
+<br>
+If any of you desire that your name should not be associated with this submission please e-mail the concern to : jisst@researchfoundation.in
+<br>
+You can track the status of your manuscript from https://www.jisst.com/my-submissions.
+<br>
+Your Manuscript No. is: ${submissionId}
+<br>
+<br>
+Regards,
+<br>
+JISST Editorial Team`;
 }
 
-const statusUpdateEmailTemplate = (submissionId, status, title) => {
-  return `Your manuscript with Manuscript No. ${submissionId} has been updated to status: ${status}.<br>
-Title: ${title}<br>
+const statusUpdateEmailTemplate = (submissionId, status, title, newReviews) => {
+  return `Dear Authors,
+<br>Your manuscript with Manuscript No. ${submissionId} has been updated.
+<br>
+Title: ${title}
+<br>
+Status: ${status}
+${newReviews ? '<br>New reviews have been submitted. Please login to view the reviews.' : ''}
 <br>
 You can track the status of your manuscript from https://www.jisst.com/my-submissions.<br>
 <br>
-Regards,<br>
-JISST Team`;
+<br>
+Regards,
+<br>
+JISST Editorial Team`;
 }
 
 const displayArticle = async (req, res, next) => {
@@ -247,7 +265,7 @@ const submitManuscript = async (req, res) => {
     if (resp.articleAuthorEmails)
       ccString += `, ${resp.articleAuthorEmails}`;
 
-    await sendMail(email, ccString, `Manuscript Submitted`, successfulSubmissionEmailTemplate(resp._id));
+    await sendMail(email, ccString, `Manuscript Submitted`, successfulSubmissionEmailTemplate(resp._id, resp.title, resp.authors, resp.correspondingAuthorName));
 
     res.status(201).json({ submissionId: resp._id });
   } catch (error) {
@@ -307,17 +325,17 @@ const submitRevision = async (req, res) => {
     });
 
     const submissionId = req.params.id;
-    const result = await ManuscriptSubmissions.findByIdAndUpdate(submissionId, {  $push: { revisionUrls: revisionUploadResult.url } });
+    const result = await ManuscriptSubmissions.findByIdAndUpdate(submissionId, { $push: { revisionUrls: revisionUploadResult.url } });
 
     // Send mail for updated status to the editor
     const emailList = await AllowedEmailAddresses.findOne({ 'ManuscriptMailingList.Name': 'Editors' }, { 'ManuscriptMailingList.$': 1 })
-    .then(doc => {
-      if (doc && doc.ManuscriptMailingList.length > 0) {
-        // Assuming there could be multiple matches and you want the first
-        return emailIds = doc.ManuscriptMailingList[0].EmailIds;
-      }
-      return [];
-    });
+      .then(doc => {
+        if (doc && doc.ManuscriptMailingList.length > 0) {
+          // Assuming there could be multiple matches and you want the first
+          return emailIds = doc.ManuscriptMailingList[0].EmailIds;
+        }
+        return [];
+      });
 
     const toString = emailList.join(', ');
 
@@ -348,22 +366,19 @@ const updateManuscript = async (req, res) => {
     const submissionId = req.params.id;
     const status = req.body.status;
     let result = null;
-    if (status === 'Under Revision') {
-      const reviewUrls = [];
-      // Loop thorough req.files and upload each file to Cloudinary and wait for the entire process to complete
-      for (let i = 0; i < req.files.length; i++) {
-        const file = req.files[i];
-        const uploadResult = await cloudinary.uploader.upload(file.path, {
-          folder: 'ManuscriptSubmissions'
-        });
-        reviewUrls.push(uploadResult.url);
-      }
+    const reviewUrls = [];
+    let newReviews = false;
+    // Loop thorough req.files and upload each file to Cloudinary and wait for the entire process to complete
+    for (let i = 0; i < req.files?.length; i++) {
+      newReviews = true;
+      const file = req.files[i];
+      const uploadResult = await cloudinary.uploader.upload(file.path, {
+        folder: 'ManuscriptSubmissions'
+      });
+      reviewUrls.push(uploadResult.url);
+    }
 
-      result = await ManuscriptSubmissions.findByIdAndUpdate(submissionId, { status: status, $push: { reviewUrls: reviewUrls } });
-    }
-    else {
-      result = await ManuscriptSubmissions.findByIdAndUpdate(submissionId, { status: status });
-    }
+    result = await ManuscriptSubmissions.findByIdAndUpdate(submissionId, { status: status, $push: { reviewUrls: reviewUrls } });
 
     // Send mail for updated status to the author
     const emailList = await AllowedEmailAddresses.findOne({ 'ManuscriptMailingList.Name': 'Editors' }, { 'ManuscriptMailingList.$': 1 })
@@ -379,7 +394,7 @@ const updateManuscript = async (req, res) => {
     if (result.articleAuthorEmails)
       ccString += `, ${result.articleAuthorEmails}`;
 
-    await sendMail(result.submittedBy, ccString, `Submission Status Updated`, statusUpdateEmailTemplate(submissionId, status, result.title));
+    await sendMail(result.submittedBy, ccString, `Submission Status Updated`, statusUpdateEmailTemplate(submissionId, status, result.title, newReviews));
 
     res.status(200).json(result);
   }
