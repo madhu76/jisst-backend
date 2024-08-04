@@ -33,6 +33,54 @@ Regards,
 JISST Editorial Team`;
 }
 
+const underRevisionSubmissionEmailTemplate = (submissionId, title, authorNames, correspondingAuthorName) => {
+  return `Dear Authors:<br>
+The review process on your submission for possible publication in the Journal of Innovation Sciences and Sustainable Technologies is now complete. 
+Following the reviews the Editorial Team recommends the revision of this manuscript. Please turn in your revision with a statement of point-by-point replies to the suggestions in the review reports within 15 days. 
+You may upload the revised version again to the Editorial Management System.<br>
+You may download the reviews by following the link: https://www.jisst.com/my-submissions<br>
+Title: ${title} <br>
+Manuscript No.: ${submissionId}<br>
+Sincerely,<br>
+Editorial Team, JISST
+`
+}
+
+const rejectedSubmissionEmailTemplate = (submissionId, title, authorNames, correspondingAuthorName) => {
+  return `Dear Authors:<br>
+The review process on your submission titled “${title}”, for possible publication in the Journal of Innovation Sciences and Sustainable Technologies (JISST), is now complete. 
+The review reports may be downloaded by following the link: , which we believe will be useful to improve the content of your manuscript.<br>
+As you may notice that all the reviewers have done a great job in reviewing this manuscript and have recommended against the publication of your paper in this journal. 
+Accordingly, we must reject this manuscript for publication.<br>
+We thank you for thinking of JISST for publication of your research and we hope to receive your future submissions to this journal.<br>
+<br>
+Sincerely,<br>
+Editorial TEAM, JISST
+`
+}
+
+const acceptedSubmissionEmailTemplate = (submissionId, title, authorNames, correspondingAuthorName) => {
+  return `Dear Authors:<br>
+Upon the recommendation of the review committee, we have pleasure in communicating the acceptance of your manuscript titled “${title}”, for publication in the Journal of Innovation Sciences and Sustainable Technologies. 
+This journal requires papers to be type set in LaTex format. For your guidance, Template/Sample files are attached to this mail. Please follow the text width and height specifications as suggested in the Template/Sample files.
+Please return your Latex, pdf files along with clean and quality figures and tables to the below E-mail address no later than 2 weeks from the date of receipt of this communication.<br>
+Also please download the appropriate copyright transfer statement and return the duly signed document.<br>
+If you want to place your article in open access category, please download the form <a href='https://res.cloudinary.com/jisst/image/upload/v1722785715/Copyright%20Docs%20for%20Accepted%20Emails/Copyright-OA.pdf'>Copyright-OA.pdf</a>. Open access category articles have a very nominal fee payable by the Authors/Institutions/Research Funding Agencies. 
+For the open access publication charges please write to the below mentioned E-mail. The authors of open access publications enjoy special privileges as explained in the copyright statement. 
+Otherwise, use the form <a href='https://res.cloudinary.com/jisst/image/upload/v1722785590/Copyright%20Docs%20for%20Accepted%20Emails/Copyright-General.pdf'>Copyright-General.pdf</a>.<br>
+Please E-mail all these documents to: jisst@researchfoundation.in<br>
+<br>
+Sincerely,<br>
+Editorial TEAM, JISST
+<br><br>
+Attachments:<br>
+1. Sample.pdf: <a href='https://res.cloudinary.com/jisst/image/upload/v1722785817/Copyright%20Docs%20for%20Accepted%20Emails/sample.pdf'>Sample.pdf</a><br>
+2. Sample.tex: <a href='http://res.cloudinary.com/jisst/raw/upload/v1722785869/Copyright%20Docs%20for%20Accepted%20Emails/sample.tex'>Sample.tex</a><br>
+3. Template.pdf: <a href='https://res.cloudinary.com/jisst/image/upload/v1722786007/Copyright%20Docs%20for%20Accepted%20Emails/template.pdf'>Template.pdf</a><br>
+4. Template.tex: <a href='http://res.cloudinary.com/jisst/raw/upload/v1722786008/Copyright%20Docs%20for%20Accepted%20Emails/template.tex'>Template.tex</a><br>
+`
+}
+
 const statusUpdateEmailTemplate = (submissionId, status, title, newReviews) => {
   return `Dear Authors,
 <br>Your manuscript with Manuscript No. ${submissionId} has been updated.
@@ -180,8 +228,6 @@ const articleFileSubmission = async (req, res, next) => {
         res.json({ success: false, msg: 'failde to uplad file' });
       }
       else {
-        // result.success = true;
-        // console.log("result - lno 121 " , result);
         const update = {
           fileId: result._id,
           fileUrl: result.avatar,
@@ -394,8 +440,18 @@ const updateManuscript = async (req, res) => {
     if (result.articleAuthorEmails)
       ccString += `, ${result.articleAuthorEmails}`;
 
-    await sendMail(result.submittedBy, ccString, `Submission Status Updated`, statusUpdateEmailTemplate(submissionId, status, result.title, newReviews));
-
+    if (status === 'Accepted') {
+      await sendMail(result.submittedBy, ccString, `Submission Status Updated`, acceptedSubmissionEmailTemplate(submissionId, result.title, result.authors, result.correspondingAuthorName));
+    }
+    else if (status === 'Under Revision') {
+      await sendMail(result.submittedBy, ccString, `Submission Status Updated`, underRevisionSubmissionEmailTemplate(submissionId, result.title, result.authors, result.correspondingAuthorName));
+    }
+    else if (status === 'Rejected') {
+      await sendMail(result.submittedBy, ccString, `Submission Status Updated`, rejectedSubmissionEmailTemplate(submissionId, result.title, result.authors, result.correspondingAuthorName));
+    }
+    else {
+      await sendMail(result.submittedBy, ccString, `Submission Status Updated`, statusUpdateEmailTemplate(submissionId, status, result.title, newReviews));
+    }
     res.status(200).json(result);
   }
   catch (error) {
