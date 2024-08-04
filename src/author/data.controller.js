@@ -75,9 +75,9 @@ Editorial TEAM, JISST
 <br><br>
 Attachments:<br>
 1. Sample.pdf: <a href='https://res.cloudinary.com/jisst/image/upload/v1722785817/Copyright%20Docs%20for%20Accepted%20Emails/sample.pdf'>Sample.pdf</a><br>
-2. Sample.tex: <a href='http://res.cloudinary.com/jisst/raw/upload/v1722785869/Copyright%20Docs%20for%20Accepted%20Emails/sample.tex'>Sample.tex</a><br>
+2. Sample.tex: <a href='https://res.cloudinary.com/jisst/raw/upload/v1722785869/Copyright%20Docs%20for%20Accepted%20Emails/sample.tex'>Sample.tex</a><br>
 3. Template.pdf: <a href='https://res.cloudinary.com/jisst/image/upload/v1722786007/Copyright%20Docs%20for%20Accepted%20Emails/template.pdf'>Template.pdf</a><br>
-4. Template.tex: <a href='http://res.cloudinary.com/jisst/raw/upload/v1722786008/Copyright%20Docs%20for%20Accepted%20Emails/template.tex'>Template.tex</a><br>
+4. Template.tex: <a href='https://res.cloudinary.com/jisst/raw/upload/v1722786008/Copyright%20Docs%20for%20Accepted%20Emails/template.tex'>Template.tex</a><br>
 `
 }
 
