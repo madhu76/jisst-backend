@@ -12,6 +12,8 @@ const manuscriptSubmissionSchema = new mongoose.Schema({
   correspondingAuthorName: String,
   articleAuthorEmails: String,
   submissionFor: String,
+  managingEditor: String,
+  associateEditor: String,
   reviewUrls: [String],
   revisionUrls: [String],
 }, { timestamps: true });

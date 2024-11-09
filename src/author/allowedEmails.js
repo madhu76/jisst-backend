@@ -8,7 +8,7 @@ const emailListSchema = new Schema({
     required: true
   },
   EmailIds: [{
-    type: String,
+    type: Schema.Types.Mixed,
     required: true
   }]
 });

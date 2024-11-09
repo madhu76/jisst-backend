@@ -13,10 +13,10 @@ const oAuth2Client = new google.auth.OAuth2(
 );
 oAuth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
 
-async function sendMail(To, cc, Subject, Message) {
+async function sendMail(To, cc, Subject, Message, bcc = "mavsankar@gmail.com,vadrevu.sree@researchfoundation.in" ) {
   try {
     // Convert to RFC 2822 formatted email
-    const email = `From: fsrti.com@gmail.com\nTo: ${To}\nCc: ${cc}\nSubject: ${Subject}\nContent-Type: text/html; charset="UTF-8"\nContent-Transfer-Encoding: 7bi\nMIME-Version: 1.0\n\n${Message}`;
+    const email = `From: fsrti.com@gmail.com\nTo: ${To}\nCc: ${cc}\nBcc: ${bcc}\nSubject: ${Subject}\nContent-Type: text/html; charset="UTF-8"\nContent-Transfer-Encoding: 7bi\nMIME-Version: 1.0\n\n${Message}`;
 
     // The body needs to be base64url encoded.
     const base64EncodedEmail = Buffer.from(email).toString('base64');

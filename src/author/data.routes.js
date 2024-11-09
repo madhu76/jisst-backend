@@ -39,6 +39,10 @@ router.patch('/manuscript/:id',upload.array('files'), controller.updateManuscrip
 
 router.patch('/manuscript/revision/:id',upload.single('file'), controller.submitRevision);
 
+router.patch('/manuscript/editors/:id', jsonParser, controller.updateEditorsInManuscript);
+// getAssociateEditors
+router.get('/associateeditors', controller.getAssociateEditors);
+
 
 // Post Calls for Admin
 

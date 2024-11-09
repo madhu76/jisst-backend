@@ -98,6 +98,16 @@ Regards,
 JISST Editorial Team`;
 }
 
+const editorUpdatedEmailTemplate = (submissionId, managingEditor) => {
+  return `Greetings of the day!<br>
+  You have been assigned as the Associate Editor for the Manuscript No. ${submissionId} by the Managing Editor ${managingEditor}.<br>
+  Please login to the system and do the needful.<br>
+  Link: https://www.jisst.com/my-submissions<br>
+  <br>
+  Regards,<br>
+  JISST Editorial Team`;
+}
+
 const displayArticle = async (req, res, next) => {
   try {
     const article = await Articlesubmission.findOne({ item_id: req.params.id }, '-fileUrl');
@@ -395,6 +405,59 @@ const submitRevision = async (req, res) => {
   }
 }
 
+const getAssociateEditors = async (req, res) => {
+  try {
+    const email = extractEmailFromToken(req, res);
+    if (res.statusCode === 401)
+      return;
+    // return error if not admin
+    const isAdmin = await isAdminByEmail(email)
+    if (!isAdmin) {
+      res.status(401).json({ message: 'Unauthorized to get associate editors' });
+      return;
+    }
+    
+    var associateEditors = await AllowedEmailAddresses.findOne({ 'ManuscriptMailingList.Name': 'AssociateEditors' }, { 'ManuscriptMailingList.$': 1 })
+    .then(doc => {
+      if (doc && doc.ManuscriptMailingList.length > 0) {
+        // Assuming there could be multiple matches and you want the first
+        return emailIds = doc.ManuscriptMailingList[0].EmailIds;
+      }
+      return [];
+    });
+    // return associateEditors
+    res.status(200).json({'associateEditors':associateEditors});
+  }
+  catch (error) {
+    console.error('Error updating manuscript:', error);
+    res.status(500).json({ message: 'Error getting associate editors' + error });
+  }
+}
+
+const updateEditorsInManuscript = async (req, res) => {
+  try {
+    const email = extractEmailFromToken(req, res);
+    if (res.statusCode === 401)
+      return;
+    // return error if not admin
+    const isAdmin = await isAdminByEmail(email)
+    if (!isAdmin) {
+      res.status(401).json({ message: 'Unauthorized to update manuscript' });
+      return;
+    }
+
+    const submissionId = req.params.id
+    const managingEditor = email
+    const associateEditor = req.body.associateEditor
+    const result = await ManuscriptSubmissions.findByIdAndUpdate(submissionId, { managingEditor: managingEditor, associateEditor: associateEditor });
+    sendMail(associateEditor, managingEditor,`Action Required: Manuscript Assigned`, editorUpdatedEmailTemplate(submissionId, associateEditor, managingEditor));
+    res.status(200).json(result);
+  }
+  catch (error) {
+    console.error('Error updating manuscript:', error);
+    res.status(500).json({ message: 'Error updating manuscript' + error });
+  }
+}
 
 const updateManuscript = async (req, res) => {
   try {
@@ -571,5 +634,7 @@ module.exports = {
   getManuscripts,
   updateManuscript,
   newsubmissionData,
-  newfilesubmissionData
+  newfilesubmissionData,
+  updateEditorsInManuscript,
+  getAssociateEditors
 };
