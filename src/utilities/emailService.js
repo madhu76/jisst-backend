@@ -1,37 +1,87 @@
-const { google } = require('googleapis');
+// sendMail.js
 
-// These id's and secrets should come from .env file.
-const CLIENT_ID = process.env.Google_API_ClientId;
-const CLEINT_SECRET = process.env.Google_API_ClientSecret;
-const REDIRECT_URI = 'https://jisst-backend.vercel.app';
-const REFRESH_TOKEN = process.env.Google_API_RefreshToken;
+async function sendMail(
+  To,
+  cc,
+  Subject,
+  Message,
+  bcc = 'mavsankar@gmail.com,vadrevu.sree@researchfoundation.in'
+) {
+  // Read environment variables
+  const CLIENT_ID = process.env.ZOHOMAIL_CLIENT_ID;
+  const CLIENT_SECRET = process.env.ZOHOMAIL_CLIENT_SECRET;
+  const ACCOUNT_ID = process.env.ZOHOMAIL_ACCOUNT_ID;
 
-const oAuth2Client = new google.auth.OAuth2(
-  CLIENT_ID,
-  CLEINT_SECRET,
-  REDIRECT_URI
-);
-oAuth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
+  if (!CLIENT_ID || !CLIENT_SECRET || !ACCOUNT_ID) {
+    throw new Error('Missing required environment variables.');
+  }
 
-async function sendMail(To, cc, Subject, Message, bcc = "mavsankar@gmail.com,vadrevu.sree@researchfoundation.in" ) {
+  // Step 1: Get access token
+  const tokenUrl = 'https://accounts.zoho.com/oauth/v2/token';
+  const tokenParams = new URLSearchParams({
+    client_id: CLIENT_ID,
+    client_secret: CLIENT_SECRET,
+    grant_type: 'client_credentials',
+    scope: 'ZohoMail.messages.CREATE',
+  });
+
+  let accessToken;
   try {
-    // Convert to RFC 2822 formatted email
-    const email = `From: fsrti.com@gmail.com\nTo: ${To}\nCc: ${cc}\nBcc: ${bcc}\nSubject: ${Subject}\nContent-Type: text/html; charset="UTF-8"\nContent-Transfer-Encoding: 7bi\nMIME-Version: 1.0\n\n${Message}`;
-
-    // The body needs to be base64url encoded.
-    const base64EncodedEmail = Buffer.from(email).toString('base64');
-
-
-    const result = await google.gmail('v1').users.messages.send({
-      userId: 'fsrti.com@gmail.com',
-      requestBody: {
-        raw: base64EncodedEmail
-      },
-      auth: oAuth2Client
+    const tokenResponse = await fetch(`${tokenUrl}?${tokenParams.toString()}`, {
+      method: 'POST',
     });
-    return result;
-  } catch (error) { 
-    throw new Error(error);
+
+    if (!tokenResponse.ok) {
+      const errorData = await tokenResponse.text();
+      throw new Error(
+        `Token request failed: ${tokenResponse.status} ${tokenResponse.statusText} - ${errorData}`
+      );
+    }
+
+    const tokenData = await tokenResponse.json();
+    accessToken = tokenData.access_token;
+
+    if (!accessToken) {
+      throw new Error('Access token not found in the response.');
+    }
+  } catch (error) {
+    console.error('Error fetching access token:', error);
+    throw error;
+  }
+
+  // Step 2: Send email
+  const emailUrl = `https://mail.zoho.com/api/accounts/${ACCOUNT_ID}/messages`;
+  const emailBody = {
+    fromAddress: 'jisst@researchfoundation.in',
+    toAddress: To,
+    ccAddress: cc,
+    bccAddress: bcc,
+    subject: Subject,
+    content: Message,
+  };
+
+  try {
+    const emailResponse = await fetch(emailUrl, {
+      method: 'POST',
+      headers: {
+        Authorization: `Zoho-oauthtoken ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(emailBody),
+    });
+
+    if (!emailResponse.ok) {
+      const errorData = await emailResponse.text();
+      throw new Error(
+        `Email send failed: ${emailResponse.status} ${emailResponse.statusText} - ${errorData}`
+      );
+    }
+
+    const emailData = await emailResponse.json();
+    return emailData;
+  } catch (error) {
+    console.error('Error sending email:', error);
+    throw error;
   }
 }
 
