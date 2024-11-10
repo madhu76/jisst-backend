@@ -306,7 +306,7 @@ const submitManuscript = async (req, res) => {
 
     const resp = await newArticle.save();
 
-    const emailList = await AllowedEmailAddresses.findOne({ 'ManuscriptMailingList.Name': 'Editors' }, { 'ManuscriptMailingList.$': 1 })
+    const emailList = await AllowedEmailAddresses.findOne({ 'ManuscriptMailingList.Name': 'EmailList' }, { 'ManuscriptMailingList.$': 1 })
       .then(doc => {
         if (doc && doc.ManuscriptMailingList.length > 0) {
           // Assuming there could be multiple matches and you want the first
@@ -384,7 +384,7 @@ const submitRevision = async (req, res) => {
     const result = await ManuscriptSubmissions.findByIdAndUpdate(submissionId, { $push: { revisionUrls: revisionUploadResult.url } });
 
     // Send mail for updated status to the editor
-    const emailList = await AllowedEmailAddresses.findOne({ 'ManuscriptMailingList.Name': 'Editors' }, { 'ManuscriptMailingList.$': 1 })
+    const emailList = await AllowedEmailAddresses.findOne({ 'ManuscriptMailingList.Name': 'EmailList' }, { 'ManuscriptMailingList.$': 1 })
       .then(doc => {
         if (doc && doc.ManuscriptMailingList.length > 0) {
           // Assuming there could be multiple matches and you want the first
@@ -450,7 +450,7 @@ const updateEditorsInManuscript = async (req, res) => {
     const managingEditor = email
     const associateEditor = req.body.associateEditor
     const result = await ManuscriptSubmissions.findByIdAndUpdate(submissionId, { managingEditor: managingEditor, associateEditor: associateEditor });
-    sendMail(associateEditor, managingEditor,`Action Required: Manuscript Assigned`, editorUpdatedEmailTemplate(submissionId, associateEditor, managingEditor));
+    await sendMail(associateEditor, managingEditor,`Action Required: Manuscript Assigned`, editorUpdatedEmailTemplate(submissionId, associateEditor, managingEditor));
     res.status(200).json(result);
   }
   catch (error) {
@@ -490,7 +490,7 @@ const updateManuscript = async (req, res) => {
     result = await ManuscriptSubmissions.findByIdAndUpdate(submissionId, { status: status, $push: { reviewUrls: reviewUrls } });
 
     // Send mail for updated status to the author
-    const emailList = await AllowedEmailAddresses.findOne({ 'ManuscriptMailingList.Name': 'Editors' }, { 'ManuscriptMailingList.$': 1 })
+    const emailList = await AllowedEmailAddresses.findOne({ 'ManuscriptMailingList.Name': 'EmailList' }, { 'ManuscriptMailingList.$': 1 })
       .then(doc => {
         if (doc && doc.ManuscriptMailingList.length > 0) {
           // Assuming there could be multiple matches and you want the first
@@ -524,7 +524,7 @@ const updateManuscript = async (req, res) => {
 }
 
 async function isAdminByEmail(email) {
-  return await AllowedEmailAddresses.findOne({ 'ManuscriptMailingList.Name': 'Editors' }, { 'ManuscriptMailingList.$': 1 })
+  return await AllowedEmailAddresses.findOne({ 'ManuscriptMailingList.Name': 'AdminList' }, { 'ManuscriptMailingList.$': 1 })
     .then(doc => {
       if (doc && doc.ManuscriptMailingList.length > 0) {
         // Assuming there could be multiple matches and you want the first
