@@ -100,7 +100,7 @@ JISST Editorial Team`;
 
 const editorUpdatedEmailTemplate = (submissionId, managingEditor) => {
   return `Greetings of the day!<br>
-  You have been assigned as the Associate Editor for the Manuscript No. ${submissionId} by the Managing Editor ${managingEditor}.<br>
+  You have been assigned as the Associate Editor for the Manuscript No. ${submissionId} by ${managingEditor}.<br>
   Please login to the system and do the needful.<br>
   Link: https://www.jisst.com/my-submissions<br>
   <br>
