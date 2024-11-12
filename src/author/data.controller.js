@@ -1,18 +1,23 @@
-const Articlesubmission = require('./articlesubmission');
-const ArticleFileSubmission = require('./articlefilesubmission');
+const Articlesubmission = require("./articlesubmission");
+const ArticleFileSubmission = require("./articlefilesubmission");
 const cloudinary = require("../utilities/cloudinary");
-const ManuscriptSubmissions = require('./newManuscriptSubmission');
-const AllowedEmailAddresses = require('./allowedEmails');
-const jwt = require('jsonwebtoken');
-const { sendMail } = require('../utilities/emailService');
+const ManuscriptSubmissions = require("./newManuscriptSubmission");
+const AllowedEmailAddresses = require("./allowedEmails");
+const jwt = require("jsonwebtoken");
+const { sendMail } = require("../utilities/emailService");
 
 const get = (req, res) => {
   res.json({
-    message: 'Hello Author! 🔐',
+    message: "Hello Author! 🔐",
   });
 };
 
-const successfulSubmissionEmailTemplate = (submissionId, title, authorNames, correspondingAuthorName) => {
+const successfulSubmissionEmailTemplate = (
+  submissionId,
+  title,
+  authorNames,
+  correspondingAuthorName
+) => {
   return `Dear Authors,
 <br>
 The following manuscript has been submitted successfully for possible publication in JISST!
@@ -31,9 +36,14 @@ Your Manuscript No. is: ${submissionId}
 Regards,
 <br>
 JISST Editorial Team`;
-}
+};
 
-const underRevisionSubmissionEmailTemplate = (submissionId, title, authorNames, correspondingAuthorName) => {
+const underRevisionSubmissionEmailTemplate = (
+  submissionId,
+  title,
+  authorNames,
+  correspondingAuthorName
+) => {
   return `Dear Authors:<br>
 The review process on your submission for possible publication in the Journal of Innovation Sciences and Sustainable Technologies is now complete. 
 Following the reviews the Editorial Team recommends the revision of this manuscript. Please turn in your revision with a statement of point-by-point replies to the suggestions in the review reports within 15 days. 
@@ -43,10 +53,15 @@ Title: ${title} <br>
 Manuscript No.: ${submissionId}<br>
 Sincerely,<br>
 Editorial Team, JISST
-`
-}
+`;
+};
 
-const rejectedSubmissionEmailTemplate = (submissionId, title, authorNames, correspondingAuthorName) => {
+const rejectedSubmissionEmailTemplate = (
+  submissionId,
+  title,
+  authorNames,
+  correspondingAuthorName
+) => {
   return `Dear Authors:<br>
 The review process on your submission titled “${title}”, for possible publication in the Journal of Innovation Sciences and Sustainable Technologies (JISST), is now complete. 
 The review reports may be downloaded by following the link: , which we believe will be useful to improve the content of your manuscript.<br>
@@ -56,10 +71,15 @@ We thank you for thinking of JISST for publication of your research and we hope 
 <br>
 Sincerely,<br>
 Editorial TEAM, JISST
-`
-}
+`;
+};
 
-const acceptedSubmissionEmailTemplate = (submissionId, title, authorNames, correspondingAuthorName) => {
+const acceptedSubmissionEmailTemplate = (
+  submissionId,
+  title,
+  authorNames,
+  correspondingAuthorName
+) => {
   return `Dear Authors:<br>
 Upon the recommendation of the review committee, we have pleasure in communicating the acceptance of your manuscript titled “${title}”, for publication in the Journal of Innovation Sciences and Sustainable Technologies. 
 This journal requires papers to be type set in LaTex format. For your guidance, Template/Sample files are attached to this mail. Please follow the text width and height specifications as suggested in the Template/Sample files.
@@ -78,8 +98,8 @@ Attachments:<br>
 2. Sample.tex: <a href='https://res.cloudinary.com/jisst/raw/upload/v1722785869/Copyright%20Docs%20for%20Accepted%20Emails/sample.tex'>Sample.tex</a><br>
 3. Template.pdf: <a href='https://res.cloudinary.com/jisst/image/upload/v1722786007/Copyright%20Docs%20for%20Accepted%20Emails/template.pdf'>Template.pdf</a><br>
 4. Template.tex: <a href='https://res.cloudinary.com/jisst/raw/upload/v1722786008/Copyright%20Docs%20for%20Accepted%20Emails/template.tex'>Template.tex</a><br>
-`
-}
+`;
+};
 
 const statusUpdateEmailTemplate = (submissionId, status, title, newReviews) => {
   return `Dear Authors,
@@ -88,7 +108,11 @@ const statusUpdateEmailTemplate = (submissionId, status, title, newReviews) => {
 Title: ${title}
 <br>
 Status: ${status}
-${newReviews ? '<br>New reviews have been submitted. Please login to view the reviews.' : ''}
+${
+  newReviews
+    ? "<br>New reviews have been submitted. Please login to view the reviews."
+    : ""
+}
 <br>
 You can track the status of your manuscript from https://www.jisst.com/my-submissions.<br>
 <br>
@@ -96,7 +120,7 @@ You can track the status of your manuscript from https://www.jisst.com/my-submis
 Regards,
 <br>
 JISST Editorial Team`;
-}
+};
 
 const editorUpdatedEmailTemplate = (submissionId, managingEditor) => {
   return `Greetings of the day!<br>
@@ -106,18 +130,27 @@ const editorUpdatedEmailTemplate = (submissionId, managingEditor) => {
   <br>
   Regards,<br>
   JISST Editorial Team`;
-}
+};
 
 const displayArticle = async (req, res, next) => {
   try {
-    const article = await Articlesubmission.findOne({ item_id: req.params.id }, '-fileUrl');
+    const article = await Articlesubmission.findOne(
+      { item_id: req.params.id },
+      "-fileUrl"
+    );
     let view = article.views;
-    Articlesubmission.updateOne({ item_id: req.params.id }, { $set: { views: view + 1 } },
+    Articlesubmission.updateOne(
+      { item_id: req.params.id },
+      { $set: { views: view + 1 } },
       function (err, results) {
         console.log(results.result);
-      });
-    const updatedArticle = await Articlesubmission.findOne({ item_id: req.params.id }, '-fileUrl');
-    console.log('find new article data ' + updatedArticle);
+      }
+    );
+    const updatedArticle = await Articlesubmission.findOne(
+      { item_id: req.params.id },
+      "-fileUrl"
+    );
+    console.log("find new article data " + updatedArticle);
     res.json(JSON.stringify(updatedArticle));
   } catch (error) {
     res.status(500);
@@ -129,12 +162,18 @@ const downloadArticle = async (req, res, next) => {
   try {
     const article = await Articlesubmission.findOne({ item_id: req.params.id });
     let download = article.downloads;
-    Articlesubmission.updateOne({ item_id: req.params.id }, { $set: { downloads: download + 1 } },
+    Articlesubmission.updateOne(
+      { item_id: req.params.id },
+      { $set: { downloads: download + 1 } },
       function (err, results) {
         console.log(results.result);
-      });
-    const updatedArticle = await Articlesubmission.findOne({ item_id: req.params.id }, '-fileUrl');
-    console.log('download Article ' + updatedArticle);
+      }
+    );
+    const updatedArticle = await Articlesubmission.findOne(
+      { item_id: req.params.id },
+      "-fileUrl"
+    );
+    console.log("download Article " + updatedArticle);
     res.json(JSON.stringify(updatedArticle));
   } catch (error) {
     res.status(500);
@@ -142,10 +181,9 @@ const downloadArticle = async (req, res, next) => {
   }
 };
 
-
 const getArticlesData = async (req, res, next) => {
   try {
-    const articles = await Articlesubmission.find({}, '-fileUrl');
+    const articles = await Articlesubmission.find({}, "-fileUrl");
     let data = [];
     articles.forEach(function (ff) {
       if (ff.isTrue && ff.isTrue == true) {
@@ -162,7 +200,10 @@ const getArticlesData = async (req, res, next) => {
 
 const getDownloadData = async (req, res, next) => {
   try {
-    const articles = await Articlesubmission.find({}, '-fileUrl').sort({ "downloads": -1, "item_id": 1 });
+    const articles = await Articlesubmission.find({}, "-fileUrl").sort({
+      downloads: -1,
+      item_id: 1,
+    });
     let data = [];
     articles.forEach(function (ff) {
       if (ff.isTrue && ff.isTrue == true) {
@@ -178,7 +219,10 @@ const getDownloadData = async (req, res, next) => {
 
 const getViewsData = async (req, res, next) => {
   try {
-    const articles = await Articlesubmission.find({}, '-fileUrl').sort({ "views": -1, "item_id": 1 });
+    const articles = await Articlesubmission.find({}, "-fileUrl").sort({
+      views: -1,
+      item_id: 1,
+    });
     let data = [];
     articles.forEach(function (ff) {
       if (ff.isTrue && ff.isTrue == true) {
@@ -198,10 +242,9 @@ const articleSubmissionData = async (req, res, next) => {
     console.log(`data`, articleSubmission);
     articleSubmission.save((err, result) => {
       if (err) {
-        console.log(err)
-        res.json({ success: false, msg: 'failed to register user' });
-      }
-      else {
+        console.log(err);
+        res.json({ success: false, msg: "failed to register user" });
+      } else {
         result.success = true;
         res.json(result);
       }
@@ -212,17 +255,15 @@ const articleSubmissionData = async (req, res, next) => {
   }
 };
 
-
 const articleFileSubmission = async (req, res, next) => {
   try {
     let result;
     console.log("req.body.formId = ", req.body.formId);
     if (req.file)
       result = await cloudinary.uploader.upload(req.file.path, {
-        folder: 'Articles'
+        folder: "Articles",
       });
-    else
-      console.log(`upload plzzz`);
+    else console.log(`upload plzzz`);
     console.log(`result`, result);
     delete req.body.image;
     let articlefilesubmission = new ArticleFileSubmission({
@@ -234,25 +275,25 @@ const articleFileSubmission = async (req, res, next) => {
     console.log(`data` + articlefilesubmission);
     articlefilesubmission.save(async (err, result) => {
       if (err) {
-        console.log(err)
-        res.json({ success: false, msg: 'failde to uplad file' });
-      }
-      else {
+        console.log(err);
+        res.json({ success: false, msg: "failde to uplad file" });
+      } else {
         const update = {
           fileId: result._id,
           fileUrl: result.avatar,
-        }
+        };
         Articlesubmission.findOneAndUpdate(
           { _id: result.formId },
           { $set: update },
-          { new: true }, (err, doc) => {
+          { new: true },
+          (err, doc) => {
             if (err) {
               console.log("error error error error", err);
-            }
-            else {
+            } else {
               console.log(doc.fileId, " ", doc.fileUrl);
             }
-          });
+          }
+        );
         res.json(result);
       }
     });
@@ -263,28 +304,29 @@ const articleFileSubmission = async (req, res, next) => {
 };
 
 const submitManuscript = async (req, res) => {
-
   try {
-
     const email = extractEmailFromToken(req, res);
-    if (res.statusCode === 401)
-      return;
+    if (res.statusCode === 401) return;
     // Upload file to Cloudinary
     const result = await cloudinary.uploader.upload(req.file.path, {
-      folder: 'ManuscriptSubmissions'
+      folder: "ManuscriptSubmissions",
     });
     const generateCustomId = async () => {
       //Get Latest _Id in the format <year>-<number> and increment the <number> by 1
       let year = new Date().getFullYear().toString().slice(-2);
-      let latestResult = await ManuscriptSubmissions.findOne({}, { _id: 1 }, { sort: { createdAt: -1 } });
+      let latestResult = await ManuscriptSubmissions.findOne(
+        {},
+        { _id: 1 },
+        { sort: { createdAt: -1 } }
+      );
       let latestId = latestResult._id;
-      let latestYear = latestId.split('-')[0];
-      let latestNumber = latestId.split('-')[1];
+      let latestYear = latestId.split("-")[0];
+      let latestNumber = latestId.split("-")[1];
       if (year !== latestYear) {
         return `${year}-0001`;
       }
       let newNumber = parseInt(latestNumber) + 1;
-      return `${year}-${newNumber.toString().padStart(4, '0')}`;
+      return `${year}-${newNumber.toString().padStart(4, "0")}`;
     };
 
     const customId = await generateCustomId();
@@ -297,178 +339,212 @@ const submitManuscript = async (req, res) => {
       authors: req.body.authors,
       abstract: req.body.abstract,
       keywords: req.body.keywords,
-      status: 'Submission Received',
+      status: "Submission Received",
       articleUrl: result.url, // URL from Cloudinary
       correspondingAuthorName: req.body.correspondingAuthorName,
       articleAuthorEmails: req.body.articleAuthorEmails,
-      submissionFor: req.body.submissionFor
+      submissionFor: req.body.submissionFor,
     });
 
     const resp = await newArticle.save();
 
-    const emailList = await AllowedEmailAddresses.findOne({ 'ManuscriptMailingList.Name': 'EmailList' }, { 'ManuscriptMailingList.$': 1 })
-      .then(doc => {
-        if (doc && doc.ManuscriptMailingList.length > 0) {
-          // Assuming there could be multiple matches and you want the first
-          return emailIds = doc.ManuscriptMailingList[0].EmailIds;
-        }
-        return [];
-      });
+    const emailList = await AllowedEmailAddresses.findOne(
+      { "ManuscriptMailingList.Name": "EmailList" },
+      { "ManuscriptMailingList.$": 1 }
+    ).then((doc) => {
+      if (doc && doc.ManuscriptMailingList.length > 0) {
+        // Assuming there could be multiple matches and you want the first
+        return (emailIds = doc.ManuscriptMailingList[0].EmailIds);
+      }
+      return [];
+    });
 
     // join email list as a comma separated string
-    let ccString = emailList.join(', ');
+    let ccString = emailList.join(", ");
     // append author emails to cc list if not empty or null
-    if (resp.articleAuthorEmails)
-      ccString += `, ${resp.articleAuthorEmails}`;
+    if (resp.articleAuthorEmails) ccString += `, ${resp.articleAuthorEmails}`;
 
-    await sendMail(email, ccString, `Manuscript Submitted`, successfulSubmissionEmailTemplate(resp._id, resp.title, resp.authors, resp.correspondingAuthorName));
+    await sendMail(
+      email,
+      ccString,
+      `Manuscript Submitted`,
+      successfulSubmissionEmailTemplate(
+        resp._id,
+        resp.title,
+        resp.authors,
+        resp.correspondingAuthorName
+      )
+    );
 
     res.status(201).json({ submissionId: resp._id });
   } catch (error) {
-    console.error('Error submitting article:', error);
-    res.status(500).json({ message: 'Error submitting article' + error });
+    console.error("Error submitting article:", error);
+    res.status(500).json({ message: "Error submitting article" + error });
   }
 };
 
 const getManuscripts = async (req, res) => {
-
   try {
-
     const email = extractEmailFromToken(req, res);
-    if (res.statusCode === 401)
-      return;
+    if (res.statusCode === 401) return;
 
     // Query for manuscripts submitted by the extracted email
-    const isAdmin = await isAdminByEmail(email)
-
+    const isAdmin = await isAdminByEmail(email);
+    const isAssociateEditor = await isAssociateEditorByEmail(email);
     let manuscripts = [];
-    if (!isAdmin) {
-      manuscripts = await ManuscriptSubmissions.find({ submittedBy: email }).exec();
-      let coAuthorManuscripts = await ManuscriptSubmissions.find({
-        articleAuthorEmails: {
-          $regex: new RegExp(`\\b${email}\\b`, 'i')
-        }
-      }, '_id title authors status submissionFor').exec();
+
+    if (!isAdmin && !isAssociateEditor) {
+      manuscripts = await ManuscriptSubmissions.find({
+        submittedBy: email,
+      }).exec();
+      let coAuthorManuscripts = await ManuscriptSubmissions.find(
+        {
+          articleAuthorEmails: {
+            $regex: new RegExp(`\\b${email}\\b`, "i"),
+          },
+        },
+        "_id title authors status submissionFor"
+      ).exec();
 
       manuscripts = manuscripts.concat(coAuthorManuscripts);
-    }
-    else {
+    } else if (isAdmin) {
       manuscripts = await ManuscriptSubmissions.find({}).exec();
+    } else if (isAssociateEditor) {
+      manuscripts = await ManuscriptSubmissions.find({
+        associateEditor: email,
+      }).exec();
     }
 
     // Respond with the list of manuscripts
-    res.status(200).json({ submissions: manuscripts, isAdmin: isAdmin });
+    res.status(200).json({ submissions: manuscripts, isAdmin: isAdmin || isAssociateEditor });
   } catch (error) {
-    console.error('Error fetching manuscripts:', error);
-    res.status(500).json({ message: 'Error fetching manuscripts' });
+    console.error("Error fetching manuscripts:", error);
+    res.status(500).json({ message: "Error fetching manuscripts" });
   }
 };
 const submitRevision = async (req, res) => {
   try {
-
     const email = extractEmailFromToken(req, res);
-    if (res.statusCode === 401)
-      return;
+    if (res.statusCode === 401) return;
     // return error if not author
     if (email != req.body.submittedBy) {
-      res.status(401).json({ message: 'Unauthorized to submit revision' });
+      res.status(401).json({ message: "Unauthorized to submit revision" });
       return;
     }
 
     //Upload file to Cloudinary
-    const revisionUploadResult = await cloudinary.uploader.upload(req.file.path, {
-      folder: 'ManuscriptSubmissions'
-    });
+    const revisionUploadResult = await cloudinary.uploader.upload(
+      req.file.path,
+      {
+        folder: "ManuscriptSubmissions",
+      }
+    );
 
     const submissionId = req.params.id;
-    const result = await ManuscriptSubmissions.findByIdAndUpdate(submissionId, { $push: { revisionUrls: revisionUploadResult.url } });
+    const result = await ManuscriptSubmissions.findByIdAndUpdate(submissionId, {
+      $push: { revisionUrls: revisionUploadResult.url },
+    });
 
     // Send mail for updated status to the editor
-    const emailList = await AllowedEmailAddresses.findOne({ 'ManuscriptMailingList.Name': 'EmailList' }, { 'ManuscriptMailingList.$': 1 })
-      .then(doc => {
-        if (doc && doc.ManuscriptMailingList.length > 0) {
-          // Assuming there could be multiple matches and you want the first
-          return emailIds = doc.ManuscriptMailingList[0].EmailIds;
-        }
-        return [];
-      });
+    const emailList = await AllowedEmailAddresses.findOne(
+      { "ManuscriptMailingList.Name": "EmailList" },
+      { "ManuscriptMailingList.$": 1 }
+    ).then((doc) => {
+      if (doc && doc.ManuscriptMailingList.length > 0) {
+        // Assuming there could be multiple matches and you want the first
+        return (emailIds = doc.ManuscriptMailingList[0].EmailIds);
+      }
+      return [];
+    });
 
-    const toString = emailList.join(', ');
+    const toString = emailList.join(", ");
 
-    await sendMail(toString, email, `Revision Submitted`, `Revision for Manuscript No. ${submissionId} has been submitted by the author. Please review the revision.`);
+    await sendMail(
+      toString,
+      email,
+      `Revision Submitted`,
+      `Revision for Manuscript No. ${submissionId} has been submitted by the author. Please review the revision.`
+    );
     res.status(200).json(result);
-
+  } catch (error) {
+    console.error("Error submitting article:", error);
+    res.status(500).json({ message: "Error submitting article" + error });
   }
-  catch (error) {
-    console.error('Error submitting article:', error);
-    res.status(500).json({ message: 'Error submitting article' + error });
-  }
-}
+};
 
 const getAssociateEditors = async (req, res) => {
   try {
     const email = extractEmailFromToken(req, res);
-    if (res.statusCode === 401)
-      return;
+    if (res.statusCode === 401) return;
     // return error if not admin
-    const isAdmin = await isAdminByEmail(email)
+    const isAdmin = await isAdminByEmail(email);
     if (!isAdmin) {
-      res.status(401).json({ message: 'Unauthorized to get associate editors' });
+      res
+        .status(401)
+        .json({ message: "Unauthorized to get associate editors" });
       return;
     }
-    
-    var associateEditors = await AllowedEmailAddresses.findOne({ 'ManuscriptMailingList.Name': 'AssociateEditors' }, { 'ManuscriptMailingList.$': 1 })
-    .then(doc => {
+
+    var associateEditors = await AllowedEmailAddresses.findOne(
+      { "ManuscriptMailingList.Name": "AssociateEditors" },
+      { "ManuscriptMailingList.$": 1 }
+    ).then((doc) => {
       if (doc && doc.ManuscriptMailingList.length > 0) {
         // Assuming there could be multiple matches and you want the first
-        return emailIds = doc.ManuscriptMailingList[0].EmailIds;
+        return (emailIds = doc.ManuscriptMailingList[0].EmailIds);
       }
       return [];
     });
     // return associateEditors
-    res.status(200).json({'associateEditors':associateEditors});
+    res.status(200).json({ associateEditors: associateEditors });
+  } catch (error) {
+    console.error("Error updating manuscript:", error);
+    res
+      .status(500)
+      .json({ message: "Error getting associate editors" + error });
   }
-  catch (error) {
-    console.error('Error updating manuscript:', error);
-    res.status(500).json({ message: 'Error getting associate editors' + error });
-  }
-}
+};
 
 const updateEditorsInManuscript = async (req, res) => {
   try {
     const email = extractEmailFromToken(req, res);
-    if (res.statusCode === 401)
-      return;
+    if (res.statusCode === 401) return;
     // return error if not admin
-    const isAdmin = await isAdminByEmail(email)
+    const isAdmin = await isAdminByEmail(email);
     if (!isAdmin) {
-      res.status(401).json({ message: 'Unauthorized to update manuscript' });
+      res.status(401).json({ message: "Unauthorized to update manuscript" });
       return;
     }
 
-    const submissionId = req.params.id
-    const managingEditor = email
-    const associateEditor = req.body.associateEditor
-    const result = await ManuscriptSubmissions.findByIdAndUpdate(submissionId, { managingEditor: managingEditor, associateEditor: associateEditor });
-    await sendMail(associateEditor, managingEditor,`Action Required: Manuscript Assigned`, editorUpdatedEmailTemplate(submissionId, associateEditor, managingEditor));
+    const submissionId = req.params.id;
+    const managingEditor = email;
+    const associateEditor = req.body.associateEditor;
+    const result = await ManuscriptSubmissions.findByIdAndUpdate(submissionId, {
+      managingEditor: managingEditor,
+      associateEditor: associateEditor,
+    });
+    await sendMail(
+      associateEditor,
+      managingEditor,
+      `Action Required: Manuscript Assigned`,
+      editorUpdatedEmailTemplate(submissionId, associateEditor, managingEditor)
+    );
     res.status(200).json(result);
+  } catch (error) {
+    console.error("Error updating manuscript:", error);
+    res.status(500).json({ message: "Error updating manuscript" + error });
   }
-  catch (error) {
-    console.error('Error updating manuscript:', error);
-    res.status(500).json({ message: 'Error updating manuscript' + error });
-  }
-}
+};
 
 const updateManuscript = async (req, res) => {
   try {
-
     const email = extractEmailFromToken(req, res);
-    if (res.statusCode === 401)
-      return;
+    if (res.statusCode === 401) return;
     // return error if not admin
-    const isAdmin = await isAdminByEmail(email)
-    if (!isAdmin) {
-      res.status(401).json({ message: 'Unauthorized to update manuscript' });
+    const isAdmin = await isAdminByEmail(email);
+    const isAssociateEditor = await isAssociateEditorByEmail(email);
+    if (!isAdmin && !isAssociateEditor) {
+      res.status(401).json({ message: "Unauthorized to update manuscript" });
       return;
     }
 
@@ -482,86 +558,146 @@ const updateManuscript = async (req, res) => {
       newReviews = true;
       const file = req.files[i];
       const uploadResult = await cloudinary.uploader.upload(file.path, {
-        folder: 'ManuscriptSubmissions'
+        folder: "ManuscriptSubmissions",
       });
       reviewUrls.push(uploadResult.url);
     }
 
-    result = await ManuscriptSubmissions.findByIdAndUpdate(submissionId, { status: status, $push: { reviewUrls: reviewUrls } });
+    result = await ManuscriptSubmissions.findByIdAndUpdate(submissionId, {
+      status: status,
+      $push: { reviewUrls: reviewUrls },
+    });
 
     // Send mail for updated status to the author
-    const emailList = await AllowedEmailAddresses.findOne({ 'ManuscriptMailingList.Name': 'EmailList' }, { 'ManuscriptMailingList.$': 1 })
-      .then(doc => {
-        if (doc && doc.ManuscriptMailingList.length > 0) {
-          // Assuming there could be multiple matches and you want the first
-          return emailIds = doc.ManuscriptMailingList[0].EmailIds;
-        }
-        return [];
-      });
-    let ccString = emailList.join(', ');
+    const emailList = await AllowedEmailAddresses.findOne(
+      { "ManuscriptMailingList.Name": "EmailList" },
+      { "ManuscriptMailingList.$": 1 }
+    ).then((doc) => {
+      if (doc && doc.ManuscriptMailingList.length > 0) {
+        // Assuming there could be multiple matches and you want the first
+        return (emailIds = doc.ManuscriptMailingList[0].EmailIds);
+      }
+      return [];
+    });
+    let ccString = emailList.join(", ");
     // append author emails to cc list if not empty or null
     if (result.articleAuthorEmails)
       ccString += `, ${result.articleAuthorEmails}`;
 
-    if (status === 'Accepted') {
-      await sendMail(result.submittedBy, ccString, `Submission Status Updated`, acceptedSubmissionEmailTemplate(submissionId, result.title, result.authors, result.correspondingAuthorName));
-    }
-    else if (status === 'Under Revision') {
-      await sendMail(result.submittedBy, ccString, `Submission Status Updated`, underRevisionSubmissionEmailTemplate(submissionId, result.title, result.authors, result.correspondingAuthorName));
-    }
-    else if (status === 'Rejected') {
-      await sendMail(result.submittedBy, ccString, `Submission Status Updated`, rejectedSubmissionEmailTemplate(submissionId, result.title, result.authors, result.correspondingAuthorName));
-    }
-    else {
-      await sendMail(result.submittedBy, ccString, `Submission Status Updated`, statusUpdateEmailTemplate(submissionId, status, result.title, newReviews));
+    if (status === "Accepted") {
+      await sendMail(
+        result.submittedBy,
+        ccString,
+        `Submission Status Updated`,
+        acceptedSubmissionEmailTemplate(
+          submissionId,
+          result.title,
+          result.authors,
+          result.correspondingAuthorName
+        )
+      );
+    } else if (status === "Under Revision") {
+      await sendMail(
+        result.submittedBy,
+        ccString,
+        `Submission Status Updated`,
+        underRevisionSubmissionEmailTemplate(
+          submissionId,
+          result.title,
+          result.authors,
+          result.correspondingAuthorName
+        )
+      );
+    } else if (status === "Rejected") {
+      await sendMail(
+        result.submittedBy,
+        ccString,
+        `Submission Status Updated`,
+        rejectedSubmissionEmailTemplate(
+          submissionId,
+          result.title,
+          result.authors,
+          result.correspondingAuthorName
+        )
+      );
+    } else {
+      await sendMail(
+        result.submittedBy,
+        ccString,
+        `Submission Status Updated`,
+        statusUpdateEmailTemplate(
+          submissionId,
+          status,
+          result.title,
+          newReviews
+        )
+      );
     }
     res.status(200).json(result);
+  } catch (error) {
+    console.error("Error updating manuscript:", error);
+    res.status(500).json({ message: "Error updating manuscript" + error });
   }
-  catch (error) {
-    console.error('Error updating manuscript:', error);
-    res.status(500).json({ message: 'Error updating manuscript' + error });
-  }
-}
+};
 
 async function isAdminByEmail(email) {
-  return await AllowedEmailAddresses.findOne({ 'ManuscriptMailingList.Name': 'AdminList' }, { 'ManuscriptMailingList.$': 1 })
-    .then(doc => {
-      if (doc && doc.ManuscriptMailingList.length > 0) {
-        // Assuming there could be multiple matches and you want the first
-        const emailIds = doc.ManuscriptMailingList[0].EmailIds;
-        return emailIds.includes(email);
-      }
-      return false;
-    });
+  return await AllowedEmailAddresses.findOne(
+    { "ManuscriptMailingList.Name": "AdminList" },
+    { "ManuscriptMailingList.$": 1 }
+  ).then((doc) => {
+    if (doc && doc.ManuscriptMailingList.length > 0) {
+      // Assuming there could be multiple matches and you want the first
+      const emailIds = doc.ManuscriptMailingList[0].EmailIds;
+      return emailIds.includes(email);
+    }
+    return false;
+  });
+}
+
+async function isAssociateEditorByEmail(email) {
+  return AllowedEmailAddresses.findOne(
+    { "ManuscriptMailingList.Name": "AssociateEditors" },
+    { "ManuscriptMailingList.$": 1 }
+  ).then((doc) => {
+    if (doc && doc.ManuscriptMailingList.length > 0) {
+      const emailIds = doc.ManuscriptMailingList[0].EmailIds;
+      return emailIds.includes(email);
+    }
+    return false;
+  });
 }
 
 const extractEmailFromToken = (req, res) => {
   const bearer = req.headers.authorization;
   if (!bearer) {
-    return res.status(401).json({ message: 'Authorization header is required' });
+    return res
+      .status(401)
+      .json({ message: "Authorization header is required" });
   }
-  const bearerToken = bearer.split(' ');
+  const bearerToken = bearer.split(" ");
   const token = bearerToken[1];
   try {
     // Decode token and extract email without secret
     var decoded = jwt.decode(token, { complete: true });
 
     if (!decoded) {
-      return res.status(401).json({ message: 'Invalid authorization token. Please login' });
+      return res
+        .status(401)
+        .json({ message: "Invalid authorization token. Please login" });
     }
   } catch (error) {
-    return res.status(401).json({ message: 'Invalid authorization token. Please login again' });
+    return res
+      .status(401)
+      .json({ message: "Invalid authorization token. Please login again" });
   }
   // Extract email from token
   const email = decoded.payload.email;
   return email;
 };
 
-
 // Post Calls for Admin
 
 const newsubmissionData = async (req, res, next) => {
-
   try {
     req.body.ref_id = req.userId;
     this.id = req.userId;
@@ -572,10 +708,9 @@ const newsubmissionData = async (req, res, next) => {
 
     newsubmission.save((err, newuser) => {
       if (err) {
-        console.log(err)
-        res.json({ success: false, msg: 'failed to register user' });
-      }
-      else {
+        console.log(err);
+        res.json({ success: false, msg: "failed to register user" });
+      } else {
         res.json({ success: true });
       }
     });
@@ -583,20 +718,15 @@ const newsubmissionData = async (req, res, next) => {
     res.status(500);
     next(error);
   }
-
 };
 
-
 const newfilesubmissionData = async (req, res, next) => {
-
   try {
     req.body.ref_id = this.id;
     console.log(`ref id` + req.body.ref_id);
     let result;
-    if (req.file)
-      result = await cloudinary.uploader.upload(req.file.path);
-    else
-      console.log(`upload plzzz`);
+    if (req.file) result = await cloudinary.uploader.upload(req.file.path);
+    else console.log(`upload plzzz`);
     console.log(`result` + result);
     delete req.body.image;
     let newfilesubmission = new NewFilesubmission({
@@ -607,10 +737,9 @@ const newfilesubmissionData = async (req, res, next) => {
     console.log(`data` + newfilesubmission);
     newfilesubmission.save((err, newuser) => {
       if (err) {
-        console.log(err)
-        res.json({ success: false, msg: 'failed to register user' });
-      }
-      else {
+        console.log(err);
+        res.json({ success: false, msg: "failed to register user" });
+      } else {
         res.json({ success: true });
       }
     });
@@ -636,5 +765,5 @@ module.exports = {
   newsubmissionData,
   newfilesubmissionData,
   updateEditorsInManuscript,
-  getAssociateEditors
+  getAssociateEditors,
 };
