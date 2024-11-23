@@ -582,7 +582,7 @@ const updateManuscript = async (req, res) => {
     let ccString = emailList.join(", ");
     // append author emails to cc list if not empty or null
     if (result.articleAuthorEmails)
-      ccString += `, ${result.articleAuthorEmails}`;
+      ccString += `, ${result.articleAuthorEmails}`+`, ${email}`;
 
     if (status === "Accepted") {
       await sendMail(
