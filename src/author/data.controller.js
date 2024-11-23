@@ -655,12 +655,12 @@ async function isAdminByEmail(email) {
 }
 
 async function isAssociateEditorByEmail(email) {
-  return AllowedEmailAddresses.findOne(
+  return await AllowedEmailAddresses.findOne(
     { "ManuscriptMailingList.Name": "AssociateEditors" },
     { "ManuscriptMailingList.$": 1 }
   ).then((doc) => {
     if (doc && doc.ManuscriptMailingList.length > 0) {
-      const emailIds = doc.ManuscriptMailingList[0].EmailIds;
+      const emailIds = doc.ManuscriptMailingList[0].EmailIds.map((emailId) => emailId.email);
       return emailIds.includes(email);
     }
     return false;
