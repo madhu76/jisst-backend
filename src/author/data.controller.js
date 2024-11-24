@@ -88,7 +88,7 @@ Also please download the appropriate copyright transfer statement and return the
 If you want to place your article in open access category, please download the form <a href='https://res.cloudinary.com/jisst/image/upload/v1722785715/Copyright%20Docs%20for%20Accepted%20Emails/Copyright-OA.pdf'>Copyright-OA.pdf</a>. Open access category articles have a very nominal fee payable by the Authors/Institutions/Research Funding Agencies. 
 For the open access publication charges please write to the below mentioned E-mail. The authors of open access publications enjoy special privileges as explained in the copyright statement. 
 Otherwise, use the form <a href='https://res.cloudinary.com/jisst/image/upload/v1722785590/Copyright%20Docs%20for%20Accepted%20Emails/Copyright-General.pdf'>Copyright-General.pdf</a>.<br>
-Please E-mail all these documents to: jisst@researchfoundation.in<br>
+Please E-mail all these documents to: jisst@researchfoundation.in and sharanjeet@hau.ac.in<br>
 <br>
 Sincerely,<br>
 Editorial TEAM, JISST
@@ -473,18 +473,7 @@ const submitRevision = async (req, res) => {
 };
 
 const getAssociateEditors = async (req, res) => {
-  try {
-    const email = extractEmailFromToken(req, res);
-    if (res.statusCode === 401) return;
-    // return error if not admin
-    const isAdmin = await isAdminByEmail(email);
-    if (!isAdmin) {
-      res
-        .status(401)
-        .json({ message: "Unauthorized to get associate editors" });
-      return;
-    }
-
+  try {   
     var associateEditors = await AllowedEmailAddresses.findOne(
       { "ManuscriptMailingList.Name": "AssociateEditors" },
       { "ManuscriptMailingList.$": 1 }
@@ -579,7 +568,7 @@ const updateManuscript = async (req, res) => {
       }
       return [];
     });
-    let ccString = emailList.join(", ") + `, ${email}`;
+    let ccString = emailList.join(", ") + `, ${email}`+`, sharanjeet@hau.ac.in`;
     // append author emails to cc list if not empty or null
     if (result.articleAuthorEmails)
       ccString += `, ${result.articleAuthorEmails}`;
