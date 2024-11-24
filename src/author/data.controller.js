@@ -416,7 +416,7 @@ const getManuscripts = async (req, res) => {
     }
 
     // Respond with the list of manuscripts
-    res.status(200).json({ submissions: manuscripts, isAdmin: isAdmin || isAssociateEditor });
+    res.status(200).json({ submissions: manuscripts, isAdmin: isAdmin, isAssociateEditor: isAssociateEditor });
   } catch (error) {
     console.error("Error fetching manuscripts:", error);
     res.status(500).json({ message: "Error fetching manuscripts" });
