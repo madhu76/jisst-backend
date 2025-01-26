@@ -477,9 +477,10 @@ const submitRevision = async (req, res) => {
 
 const getAssociateEditors = async (req, res) => {
   try {   
+    const streamType = req.params.streamType || "All";
     var associateEditors = await AllowedEmailAddresses.findOne(
       { "ManuscriptMailingList.Name": "AssociateEditors" },
-      { "ManuscriptMailingList.Type": "All" },
+      { "ManuscriptMailingList.Type": streamType },
       { "ManuscriptMailingList.$": 1 }
     ).then((doc) => {
       if (doc && doc.ManuscriptMailingList.length > 0) {
@@ -744,9 +745,11 @@ const newfilesubmissionData = async (req, res, next) => {
 
 const getManagingEditorFromStream = (stream) => {
   switch (stream) {
-    case "Computer Science & Information Technology":
+    case "Computer Science, Information Technology, Robotics":
       return "madhu2376@gmail.com";
-    case "Mathematical Modeling & Simulation":
+    case "Mathematics, Modeling, Simulations":
+      return "madhu2376@gmail.com";
+    case "Life Sciences, Bio Informatics, Bio Technology":
       return "madhu2376@gmail.com";
     default:
       return "madhu2376@gmail.com";
