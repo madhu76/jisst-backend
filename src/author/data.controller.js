@@ -344,6 +344,9 @@ const submitManuscript = async (req, res) => {
       correspondingAuthorName: req.body.correspondingAuthorName,
       articleAuthorEmails: req.body.articleAuthorEmails,
       submissionFor: req.body.submissionFor,
+      articleType: req.body.articleType,
+      articleStream: req.body.articleStream,
+      managingEditor: getManagingEditorFromStream(req.body.articleStream),
     });
 
     const resp = await newArticle.save();
@@ -476,6 +479,7 @@ const getAssociateEditors = async (req, res) => {
   try {   
     var associateEditors = await AllowedEmailAddresses.findOne(
       { "ManuscriptMailingList.Name": "AssociateEditors" },
+      { "ManuscriptMailingList.Type": "All" },
       { "ManuscriptMailingList.$": 1 }
     ).then((doc) => {
       if (doc && doc.ManuscriptMailingList.length > 0) {
@@ -737,6 +741,18 @@ const newfilesubmissionData = async (req, res, next) => {
     next(error);
   }
 };
+
+const getManagingEditorFromStream = (stream) => {
+  switch (stream) {
+    case "Computer Science & Information Technology":
+      return "madhu2376@gmail.com";
+    case "Mathematical Modeling & Simulation":
+      return "madhu2376@gmail.com";
+    default:
+      return "madhu2376@gmail.com";
+  }
+}
+      
 
 module.exports = {
   get,

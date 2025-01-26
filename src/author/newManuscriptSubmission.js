@@ -16,6 +16,8 @@ const manuscriptSubmissionSchema = new mongoose.Schema({
   associateEditor: String,
   reviewUrls: [String],
   revisionUrls: [String],
+  articleType: String,
+  articleStream: String,
 }, { timestamps: true });
 
 const ManuscriptSubmissions = mongoose.model('ManuscriptSubmissions', manuscriptSubmissionSchema);
