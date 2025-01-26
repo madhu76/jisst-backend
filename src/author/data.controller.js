@@ -477,10 +477,8 @@ const submitRevision = async (req, res) => {
 
 const getAssociateEditors = async (req, res) => {
   try {   
-    const streamType = req.params.streamType || "All";
     var associateEditors = await AllowedEmailAddresses.findOne(
       { "ManuscriptMailingList.Name": "AssociateEditors" },
-      { "ManuscriptMailingList.Type": streamType },
       { "ManuscriptMailingList.$": 1 }
     ).then((doc) => {
       if (doc && doc.ManuscriptMailingList.length > 0) {
