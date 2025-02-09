@@ -749,6 +749,8 @@ const getManagingEditorFromStream = (stream) => {
       return "madhu2376@gmail.com";
     case "Life Sciences, Bio Informatics, Bio Technology":
       return "madhu2376@gmail.com";
+    case "Pedagogies and Techniques":
+      return "madhu2376@gmail.com";
     default:
       return "madhu2376@gmail.com";
   }
