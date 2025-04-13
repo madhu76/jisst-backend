@@ -88,7 +88,7 @@ Also please download the appropriate copyright transfer statement and return the
 If you want to place your article in open access category, please download the form <a href='https://res.cloudinary.com/jisst/image/upload/v1722785715/Copyright%20Docs%20for%20Accepted%20Emails/Copyright-OA.pdf'>Copyright-OA.pdf</a>. Open access category articles have a very nominal fee payable by the Authors/Institutions/Research Funding Agencies. 
 For the open access publication charges please write to the below mentioned E-mail. The authors of open access publications enjoy special privileges as explained in the copyright statement. 
 Otherwise, use the form <a href='https://res.cloudinary.com/jisst/image/upload/v1722785590/Copyright%20Docs%20for%20Accepted%20Emails/Copyright-General.pdf'>Copyright-General.pdf</a>.<br>
-Please E-mail all these documents to: jisst@researchfoundation.in and sharanjeet@hau.ac.in<br>
+Please E-mail all these documents to: jisst@researchfoundation.in<br>
 <br>
 Sincerely,<br>
 Editorial TEAM, JISST
@@ -573,7 +573,7 @@ const updateManuscript = async (req, res) => {
       }
       return [];
     });
-    let ccString = emailList.join(", ") + `, ${email}`+`, sharanjeet@hau.ac.in`;
+    let ccString = emailList.join(", ");
     // append associate editor to cc list if not empty or null
     if (result.associateEditor) 
     {
