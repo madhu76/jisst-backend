@@ -461,7 +461,9 @@ const submitRevision = async (req, res) => {
     });
 
     const toString = emailList.join(", ");
-
+    if(result.associateEditor) {
+      toString = emailList + ", " + result.associateEditor;
+    }
     await sendMail(
       toString,
       email,
@@ -572,6 +574,12 @@ const updateManuscript = async (req, res) => {
       return [];
     });
     let ccString = emailList.join(", ") + `, ${email}`+`, sharanjeet@hau.ac.in`;
+    // append associate editor to cc list if not empty or null
+    if (result.associateEditor) 
+    {
+        ccString += `, ${result.associateEditor}`;
+    }
+
     // append author emails to cc list if not empty or null
     if (result.articleAuthorEmails)
       ccString += `, ${result.articleAuthorEmails}`;
