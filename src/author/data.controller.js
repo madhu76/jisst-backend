@@ -754,11 +754,11 @@ const getManagingEditorFromStream = (stream) => {
     case "Computer Science, Information Technology, Robotics":
       return "madhu2376@gmail.com";
     case "Mathematics, Modeling, Simulations":
-      return "madhu2376@gmail.com";
+      return "dkkvamsi@researchfoundation.in";
     case "Life Sciences, Bio Informatics, Bio Technology":
-      return "madhu2376@gmail.com";
+      return "dkkvamsi@researchfoundation.in";
     case "Pedagogies and Techniques":
-      return "madhu2376@gmail.com";
+      return "dkkvamsi@researchfoundation.in";
     default:
       return "madhu2376@gmail.com";
   }
