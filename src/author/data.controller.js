@@ -351,19 +351,8 @@ const submitManuscript = async (req, res) => {
 
     const resp = await newArticle.save();
 
-    const emailList = await AllowedEmailAddresses.findOne(
-      { "ManuscriptMailingList.Name": "EmailList" },
-      { "ManuscriptMailingList.$": 1 }
-    ).then((doc) => {
-      if (doc && doc.ManuscriptMailingList.length > 0) {
-        // Assuming there could be multiple matches and you want the first
-        return (emailIds = doc.ManuscriptMailingList[0].EmailIds);
-      }
-      return [];
-    });
-
     // join email list as a comma separated string
-    let ccString = emailList.join(", ");
+    let ccString = newArticle.managingEditor;
     // append author emails to cc list if not empty or null
     if (resp.articleAuthorEmails) ccString += `, ${resp.articleAuthorEmails}`;
 
@@ -448,21 +437,9 @@ const submitRevision = async (req, res) => {
       $push: { revisionUrls: revisionUploadResult.url },
     });
 
-    // Send mail for updated status to the editor
-    const emailList = await AllowedEmailAddresses.findOne(
-      { "ManuscriptMailingList.Name": "EmailList" },
-      { "ManuscriptMailingList.$": 1 }
-    ).then((doc) => {
-      if (doc && doc.ManuscriptMailingList.length > 0) {
-        // Assuming there could be multiple matches and you want the first
-        return (emailIds = doc.ManuscriptMailingList[0].EmailIds);
-      }
-      return [];
-    });
-
-    const toString = emailList.join(", ");
-    if(result.associateEditor) {
-      toString = emailList + ", " + result.associateEditor;
+    let toString = result?.managingEditor;
+    if(result?.associateEditor) {
+      toString = toString + ", " + result.associateEditor;
     }
     await sendMail(
       toString,
@@ -563,19 +540,9 @@ const updateManuscript = async (req, res) => {
     });
 
     // Send mail for updated status to the author
-    const emailList = await AllowedEmailAddresses.findOne(
-      { "ManuscriptMailingList.Name": "EmailList" },
-      { "ManuscriptMailingList.$": 1 }
-    ).then((doc) => {
-      if (doc && doc.ManuscriptMailingList.length > 0) {
-        // Assuming there could be multiple matches and you want the first
-        return (emailIds = doc.ManuscriptMailingList[0].EmailIds);
-      }
-      return [];
-    });
-    let ccString = emailList.join(", ");
+    let ccString = email + `, ${result?.managingEditor}`;
     // append associate editor to cc list if not empty or null
-    if (result.associateEditor) 
+    if (result?.associateEditor) 
     {
         ccString += `, ${result.associateEditor}`;
     }
