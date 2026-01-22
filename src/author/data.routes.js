@@ -43,6 +43,10 @@ router.patch('/manuscript/editors/:id', jsonParser, controller.updateEditorsInMa
 // getAssociateEditors
 router.get('/associateeditors', controller.getAssociateEditors);
 
+// Archive routes - for accepted manuscripts with volume/issue
+router.get('/archived', controller.getArchivedManuscripts);
+router.patch('/archived/:id', jsonParser, controller.updateArchiveDetails);
+
 
 // Post Calls for Admin
 

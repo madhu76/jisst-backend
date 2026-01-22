@@ -730,6 +730,74 @@ const getManagingEditorFromStream = (stream) => {
       return "madhu2376@gmail.com";
   }
 }
+
+const getArchivedManuscripts = async (req, res) => {
+  try {
+    const email = extractEmailFromToken(req, res);
+    if (res.statusCode === 401) return;
+
+    // Check if user is admin
+    const isAdmin = await isAdminByEmail(email);
+    if (!isAdmin) {
+      res.status(401).json({ message: "Unauthorized to view archived manuscripts" });
+      return;
+    }
+
+    // Get all accepted manuscripts
+    const manuscripts = await ManuscriptSubmissions.find({ status: "Accepted" }).exec();
+    res.status(200).json({ archivedManuscripts: manuscripts });
+  } catch (error) {
+    console.error("Error fetching archived manuscripts:", error);
+    res.status(500).json({ message: "Error fetching archived manuscripts" + error });
+  }
+};
+
+const updateArchiveDetails = async (req, res) => {
+  try {
+    const email = extractEmailFromToken(req, res);
+    if (res.statusCode === 401) return;
+
+    // Check if user is admin
+    const isAdmin = await isAdminByEmail(email);
+    if (!isAdmin) {
+      res.status(401).json({ message: "Unauthorized to update archive details" });
+      return;
+    }
+
+    const submissionId = req.params.id;
+    const { volume, issue } = req.body;
+
+    // Validate that volume and issue are provided
+    if (!volume || !issue) {
+      res.status(400).json({ message: "Volume and issue are required" });
+      return;
+    }
+
+    // Find the manuscript and check if it's accepted
+    const manuscript = await ManuscriptSubmissions.findById(submissionId);
+    if (!manuscript) {
+      res.status(404).json({ message: "Manuscript not found" });
+      return;
+    }
+
+    if (manuscript.status !== "Accepted") {
+      res.status(400).json({ message: "Only accepted manuscripts can be archived with volume and issue" });
+      return;
+    }
+
+    // Update volume and issue
+    const result = await ManuscriptSubmissions.findByIdAndUpdate(
+      submissionId,
+      { volume: volume, issue: issue },
+      { new: true }
+    );
+
+    res.status(200).json({ message: "Archive details updated successfully", manuscript: result });
+  } catch (error) {
+    console.error("Error updating archive details:", error);
+    res.status(500).json({ message: "Error updating archive details: " + error });
+  }
+};
       
 
 module.exports = {
@@ -749,4 +817,6 @@ module.exports = {
   newfilesubmissionData,
   updateEditorsInManuscript,
   getAssociateEditors,
+  getArchivedManuscripts,
+  updateArchiveDetails,
 };
