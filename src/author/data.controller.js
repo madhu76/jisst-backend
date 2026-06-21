@@ -5,6 +5,7 @@ const ManuscriptSubmissions = require("./newManuscriptSubmission");
 const AllowedEmailAddresses = require("./allowedEmails");
 const jwt = require("jsonwebtoken");
 const { sendMail } = require("../utilities/emailService");
+const telemetry = require("../utilities/telemetry");
 
 const get = (req, res) => {
   res.json({
@@ -368,9 +369,18 @@ const submitManuscript = async (req, res) => {
       )
     );
 
+    telemetry.track("audit", {
+      action: "manuscript_submitted",
+      email,
+      submissionId: resp._id,
+      title: resp.title,
+      articleStream: resp.articleStream,
+    });
+
     res.status(201).json({ submissionId: resp._id });
   } catch (error) {
     console.error("Error submitting article:", error);
+    telemetry.captureException(error, { tags: { action: "manuscript_submitted" } });
     res.status(500).json({ message: "Error submitting article" + error });
   }
 };
@@ -447,9 +457,15 @@ const submitRevision = async (req, res) => {
       `Revision Submitted`,
       `Revision for Manuscript No. ${submissionId} has been submitted by the author. Please review the revision.`
     );
+    telemetry.track("audit", {
+      action: "revision_submitted",
+      email,
+      submissionId,
+    });
     res.status(200).json(result);
   } catch (error) {
     console.error("Error submitting article:", error);
+    telemetry.captureException(error, { tags: { action: "revision_submitted" } });
     res.status(500).json({ message: "Error submitting article" + error });
   }
 };
@@ -600,9 +616,17 @@ const updateManuscript = async (req, res) => {
         )
       );
     }
+    telemetry.track("audit", {
+      action: "manuscript_status_updated",
+      email,
+      submissionId,
+      status,
+      newReviews,
+    });
     res.status(200).json(result);
   } catch (error) {
     console.error("Error updating manuscript:", error);
+    telemetry.captureException(error, { tags: { action: "manuscript_status_updated" } });
     res.status(500).json({ message: "Error updating manuscript" + error });
   }
 };
