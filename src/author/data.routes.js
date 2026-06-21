@@ -42,6 +42,12 @@ router.patch('/manuscript/revision/:id',upload.single('file'), controller.submit
 router.patch('/manuscript/editors/:id', jsonParser, controller.updateEditorsInManuscript);
 // getAssociateEditors
 router.get('/associateeditors', controller.getAssociateEditors);
+// addAssociateEditor (admin only)
+router.post('/associateeditors', jsonParser, controller.addAssociateEditor);
+
+// Delete reviews / revisions (admin only)
+router.delete('/manuscript/:id/review', jsonParser, controller.deleteReview);
+router.delete('/manuscript/:id/revision', jsonParser, controller.deleteRevision);
 
 // Archive routes - for accepted manuscripts with volume/issue
 router.get('/archived', controller.getArchivedManuscripts);

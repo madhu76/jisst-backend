@@ -822,7 +822,166 @@ const updateArchiveDetails = async (req, res) => {
     res.status(500).json({ message: "Error updating archive details: " + error });
   }
 };
-      
+
+const addAssociateEditor = async (req, res) => {
+  try {
+    const email = extractEmailFromToken(req, res);
+    if (res.statusCode === 401) return;
+
+    // Only admins can add associate editors
+    const isAdmin = await isAdminByEmail(email);
+    if (!isAdmin) {
+      res.status(401).json({ message: "Unauthorized to add associate editor" });
+      return;
+    }
+
+    const { name, email: editorEmail, streams } = req.body;
+
+    // Validate required fields
+    if (!name || !name.trim()) {
+      res.status(400).json({ message: "Name is required" });
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!editorEmail || !emailRegex.test(editorEmail)) {
+      res.status(400).json({ message: "A valid email is required" });
+      return;
+    }
+    if (!Array.isArray(streams) || streams.length === 0) {
+      res.status(400).json({ message: "At least one stream is required" });
+      return;
+    }
+
+    // Reject duplicate email
+    const existing = await AllowedEmailAddresses.findOne(
+      { "ManuscriptMailingList.Name": "AssociateEditors" },
+      { "ManuscriptMailingList.$": 1 }
+    ).then((doc) => {
+      if (doc && doc.ManuscriptMailingList.length > 0) {
+        return doc.ManuscriptMailingList[0].EmailIds.some(
+          (e) => e.email === editorEmail
+        );
+      }
+      return false;
+    });
+    if (existing) {
+      res.status(409).json({ message: "An associate editor with this email already exists" });
+      return;
+    }
+
+    const newEditor = {
+      name: name.trim(),
+      email: editorEmail.trim(),
+      streams: streams,
+    };
+
+    await AllowedEmailAddresses.findOneAndUpdate(
+      { "ManuscriptMailingList.Name": "AssociateEditors" },
+      { $push: { "ManuscriptMailingList.$.EmailIds": newEditor } }
+    );
+
+    telemetry.track("audit", {
+      action: "associate_editor_added",
+      email,
+      editorEmail: newEditor.email,
+    });
+
+    res.status(201).json({ message: "Associate editor added successfully", editor: newEditor });
+  } catch (error) {
+    console.error("Error adding associate editor:", error);
+    telemetry.captureException(error, { tags: { action: "associate_editor_added" } });
+    res.status(500).json({ message: "Error adding associate editor: " + error });
+  }
+};
+
+const deleteReview = async (req, res) => {
+  try {
+    const email = extractEmailFromToken(req, res);
+    if (res.statusCode === 401) return;
+
+    // Only admins can delete reviews
+    const isAdmin = await isAdminByEmail(email);
+    if (!isAdmin) {
+      res.status(401).json({ message: "Unauthorized to delete review" });
+      return;
+    }
+
+    const submissionId = req.params.id;
+    const { url } = req.body;
+    if (!url) {
+      res.status(400).json({ message: "Review url is required" });
+      return;
+    }
+
+    const result = await ManuscriptSubmissions.findByIdAndUpdate(
+      submissionId,
+      { $pull: { reviewUrls: url } },
+      { new: true }
+    );
+    if (!result) {
+      res.status(404).json({ message: "Manuscript not found" });
+      return;
+    }
+
+    telemetry.track("audit", {
+      action: "review_deleted",
+      email,
+      submissionId,
+      url,
+    });
+
+    res.status(200).json({ message: "Review deleted successfully", manuscript: result });
+  } catch (error) {
+    console.error("Error deleting review:", error);
+    telemetry.captureException(error, { tags: { action: "review_deleted" } });
+    res.status(500).json({ message: "Error deleting review: " + error });
+  }
+};
+
+const deleteRevision = async (req, res) => {
+  try {
+    const email = extractEmailFromToken(req, res);
+    if (res.statusCode === 401) return;
+
+    // Only admins can delete revisions
+    const isAdmin = await isAdminByEmail(email);
+    if (!isAdmin) {
+      res.status(401).json({ message: "Unauthorized to delete revision" });
+      return;
+    }
+
+    const submissionId = req.params.id;
+    const { url } = req.body;
+    if (!url) {
+      res.status(400).json({ message: "Revision url is required" });
+      return;
+    }
+
+    const result = await ManuscriptSubmissions.findByIdAndUpdate(
+      submissionId,
+      { $pull: { revisionUrls: url } },
+      { new: true }
+    );
+    if (!result) {
+      res.status(404).json({ message: "Manuscript not found" });
+      return;
+    }
+
+    telemetry.track("audit", {
+      action: "revision_deleted",
+      email,
+      submissionId,
+      url,
+    });
+
+    res.status(200).json({ message: "Revision deleted successfully", manuscript: result });
+  } catch (error) {
+    console.error("Error deleting revision:", error);
+    telemetry.captureException(error, { tags: { action: "revision_deleted" } });
+    res.status(500).json({ message: "Error deleting revision: " + error });
+  }
+};
+
 
 module.exports = {
   get,
@@ -843,4 +1002,7 @@ module.exports = {
   getAssociateEditors,
   getArchivedManuscripts,
   updateArchiveDetails,
+  addAssociateEditor,
+  deleteReview,
+  deleteRevision,
 };
