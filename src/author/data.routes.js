@@ -50,6 +50,11 @@ router.get('/managingeditors', controller.getManagingEditors);
 // addManagingEditor (admin only)
 router.post('/managingeditors', jsonParser, controller.addManagingEditor);
 
+// getStreams
+router.get('/streams', controller.getStreams);
+// addStream (admin only)
+router.post('/streams', jsonParser, controller.addStream);
+
 // Delete reviews / revisions (admin only)
 router.delete('/manuscript/:id/review', jsonParser, controller.deleteReview);
 router.delete('/manuscript/:id/revision', jsonParser, controller.deleteRevision);

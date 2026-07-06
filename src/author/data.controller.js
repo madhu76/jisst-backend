@@ -3,6 +3,7 @@ const ArticleFileSubmission = require("./articlefilesubmission");
 const cloudinary = require("../utilities/cloudinary");
 const ManuscriptSubmissions = require("./newManuscriptSubmission");
 const AllowedEmailAddresses = require("./allowedEmails");
+const Stream = require("./streams");
 const jwt = require("jsonwebtoken");
 const { sendMail } = require("../utilities/emailService");
 const telemetry = require("../utilities/telemetry");
@@ -509,6 +510,72 @@ const getManagingEditors = async (req, res) => {
     res
       .status(500)
       .json({ message: "Error getting managing editors" + error });
+  }
+};
+
+const DEFAULT_STREAMS = [
+  "Computer Science, Information Technology, Robotics",
+  "Mathematics, Modeling, Simulations",
+  "Life Sciences, Bio Informatics, Bio Technology",
+  "Pedagogies and Techniques",
+  "Indian Knowledge System- Innovations",
+  "Science News and Notes",
+  "Nanochemistry for a Sustainable Future: Innovations in Material Design",
+  "Edge Intelligence for Internet of Things - Algorithms, Architectures and Applications",
+];
+
+const getStreams = async (req, res) => {
+  try {
+    const docs = await Stream.find({}, { name: 1, _id: 0 }).exec();
+    const streams = docs.map((d) => d.name);
+    res.status(200).json({
+      streams: streams.length > 0 ? streams : DEFAULT_STREAMS,
+    });
+  } catch (error) {
+    console.error("Error getting streams:", error);
+    res.status(500).json({ message: "Error getting streams: " + error });
+  }
+};
+
+const addStream = async (req, res) => {
+  try {
+    const email = extractEmailFromToken(req, res);
+    if (res.statusCode === 401) return;
+
+    // Only admins can add streams
+    const isAdmin = await isAdminByEmail(email);
+    if (!isAdmin) {
+      res.status(401).json({ message: "Unauthorized to add stream" });
+      return;
+    }
+
+    const stream = (req.body.stream || "").trim();
+    if (!stream) {
+      res.status(400).json({ message: "Stream name is required" });
+      return;
+    }
+
+    // Seed the built-in defaults on first use so they aren't lost.
+    const count = await Stream.countDocuments();
+    if (count === 0) {
+      await Stream.insertMany(DEFAULT_STREAMS.map((name) => ({ name })));
+    }
+
+    // Case-insensitive duplicate check
+    const existingStreams = await Stream.find({}, { name: 1, _id: 0 }).exec();
+    if (existingStreams.some((s) => s.name.toLowerCase() === stream.toLowerCase())) {
+      res.status(409).json({ message: "This stream already exists" });
+      return;
+    }
+
+    await Stream.create({ name: stream });
+
+    telemetry.track("audit", { action: "stream_added", email, stream });
+    res.status(201).json({ message: "Stream added successfully", stream });
+  } catch (error) {
+    console.error("Error adding stream:", error);
+    telemetry.captureException(error, { tags: { action: "stream_added" } });
+    res.status(500).json({ message: "Error adding stream: " + error });
   }
 };
 
@@ -1129,6 +1196,8 @@ module.exports = {
   updateEditorsInManuscript,
   getAssociateEditors,
   getManagingEditors,
+  getStreams,
+  addStream,
   getArchivedManuscripts,
   updateArchiveDetails,
   addAssociateEditor,
