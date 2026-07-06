@@ -347,7 +347,7 @@ const submitManuscript = async (req, res) => {
       submissionFor: req.body.submissionFor,
       articleType: req.body.articleType,
       articleStream: req.body.articleStream,
-      managingEditor: getManagingEditorFromStream(req.body.articleStream),
+      managingEditor: await getManagingEditorFromStream(req.body.articleStream),
     });
 
     const resp = await newArticle.save();
@@ -489,6 +489,26 @@ const getAssociateEditors = async (req, res) => {
     res
       .status(500)
       .json({ message: "Error getting associate editors" + error });
+  }
+};
+
+const getManagingEditors = async (req, res) => {
+  try {
+    var managingEditors = await AllowedEmailAddresses.findOne(
+      { "ManuscriptMailingList.Name": "ManagingEditors" },
+      { "ManuscriptMailingList.$": 1 }
+    ).then((doc) => {
+      if (doc && doc.ManuscriptMailingList.length > 0) {
+        return doc.ManuscriptMailingList[0].EmailIds;
+      }
+      return [];
+    });
+    res.status(200).json({ managingEditors: managingEditors });
+  } catch (error) {
+    console.error("Error getting managing editors:", error);
+    res
+      .status(500)
+      .json({ message: "Error getting managing editors" + error });
   }
 };
 
@@ -740,18 +760,26 @@ const newfilesubmissionData = async (req, res, next) => {
   }
 };
 
-const getManagingEditorFromStream = (stream) => {
-  switch (stream) {
-    case "Computer Science, Information Technology, Robotics":
-      return "madhu2376@gmail.com";
-    case "Mathematics, Modeling, Simulations":
-      return "dkkvamsi@researchfoundation.in";
-    case "Life Sciences, Bio Informatics, Bio Technology":
-      return "dkkvamsi@researchfoundation.in";
-    case "Pedagogies and Techniques":
-      return "dkkvamsi@researchfoundation.in";
-    default:
-      return "madhu2376@gmail.com";
+const DEFAULT_MANAGING_EDITOR = "madhu2376@gmail.com";
+
+const getManagingEditorFromStream = async (stream) => {
+  try {
+    const managingEditors = await AllowedEmailAddresses.findOne(
+      { "ManuscriptMailingList.Name": "ManagingEditors" },
+      { "ManuscriptMailingList.$": 1 }
+    ).then((doc) => {
+      if (doc && doc.ManuscriptMailingList.length > 0) {
+        return doc.ManuscriptMailingList[0].EmailIds;
+      }
+      return [];
+    });
+    const editor = managingEditors.find(
+      (e) => Array.isArray(e.streams) && e.streams.includes(stream)
+    );
+    return editor ? editor.email : DEFAULT_MANAGING_EDITOR;
+  } catch (error) {
+    console.error("Error resolving managing editor from stream:", error);
+    return DEFAULT_MANAGING_EDITOR;
   }
 }
 
@@ -894,6 +922,106 @@ const addAssociateEditor = async (req, res) => {
   }
 };
 
+const addManagingEditor = async (req, res) => {
+  try {
+    const email = extractEmailFromToken(req, res);
+    if (res.statusCode === 401) return;
+
+    // Only admins can add managing editors
+    const isAdmin = await isAdminByEmail(email);
+    if (!isAdmin) {
+      res.status(401).json({ message: "Unauthorized to add managing editor" });
+      return;
+    }
+
+    const { name, email: editorEmail, streams } = req.body;
+
+    // Validate required fields
+    if (!name || !name.trim()) {
+      res.status(400).json({ message: "Name is required" });
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!editorEmail || !emailRegex.test(editorEmail)) {
+      res.status(400).json({ message: "A valid email is required" });
+      return;
+    }
+    if (!Array.isArray(streams) || streams.length === 0) {
+      res.status(400).json({ message: "At least one stream is required" });
+      return;
+    }
+
+    // Load existing managing editors (null means the list doesn't exist yet)
+    const existingList = await AllowedEmailAddresses.findOne(
+      { "ManuscriptMailingList.Name": "ManagingEditors" },
+      { "ManuscriptMailingList.$": 1 }
+    ).then((doc) => {
+      if (doc && doc.ManuscriptMailingList.length > 0) {
+        return doc.ManuscriptMailingList[0].EmailIds;
+      }
+      return null;
+    });
+    const currentEditors = existingList || [];
+
+    // Reject duplicate email
+    if (currentEditors.some((e) => e.email === editorEmail.trim())) {
+      res.status(409).json({ message: "A managing editor with this email already exists" });
+      return;
+    }
+
+    // Enforce one managing editor per stream
+    const takenStream = streams.find((stream) =>
+      currentEditors.some(
+        (e) => Array.isArray(e.streams) && e.streams.includes(stream)
+      )
+    );
+    if (takenStream) {
+      res.status(409).json({
+        message: `The stream "${takenStream}" already has a managing editor assigned`,
+      });
+      return;
+    }
+
+    const newEditor = {
+      name: name.trim(),
+      email: editorEmail.trim(),
+      streams: streams,
+    };
+
+    if (existingList === null) {
+      // Managing editors list doesn't exist yet: create it on the main document.
+      await AllowedEmailAddresses.findOneAndUpdate(
+        { "ManuscriptMailingList.Name": "AdminList" },
+        {
+          $push: {
+            ManuscriptMailingList: {
+              Name: "ManagingEditors",
+              EmailIds: [newEditor],
+            },
+          },
+        }
+      );
+    } else {
+      await AllowedEmailAddresses.findOneAndUpdate(
+        { "ManuscriptMailingList.Name": "ManagingEditors" },
+        { $push: { "ManuscriptMailingList.$.EmailIds": newEditor } }
+      );
+    }
+
+    telemetry.track("audit", {
+      action: "managing_editor_added",
+      email,
+      editorEmail: newEditor.email,
+    });
+
+    res.status(201).json({ message: "Managing editor added successfully", editor: newEditor });
+  } catch (error) {
+    console.error("Error adding managing editor:", error);
+    telemetry.captureException(error, { tags: { action: "managing_editor_added" } });
+    res.status(500).json({ message: "Error adding managing editor: " + error });
+  }
+};
+
 const deleteReview = async (req, res) => {
   try {
     const email = extractEmailFromToken(req, res);
@@ -1000,9 +1128,11 @@ module.exports = {
   newfilesubmissionData,
   updateEditorsInManuscript,
   getAssociateEditors,
+  getManagingEditors,
   getArchivedManuscripts,
   updateArchiveDetails,
   addAssociateEditor,
+  addManagingEditor,
   deleteReview,
   deleteRevision,
 };

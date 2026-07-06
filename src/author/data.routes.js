@@ -45,6 +45,11 @@ router.get('/associateeditors', controller.getAssociateEditors);
 // addAssociateEditor (admin only)
 router.post('/associateeditors', jsonParser, controller.addAssociateEditor);
 
+// getManagingEditors
+router.get('/managingeditors', controller.getManagingEditors);
+// addManagingEditor (admin only)
+router.post('/managingeditors', jsonParser, controller.addManagingEditor);
+
 // Delete reviews / revisions (admin only)
 router.delete('/manuscript/:id/review', jsonParser, controller.deleteReview);
 router.delete('/manuscript/:id/revision', jsonParser, controller.deleteRevision);
