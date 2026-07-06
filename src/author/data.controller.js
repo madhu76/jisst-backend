@@ -918,6 +918,72 @@ const updateArchiveDetails = async (req, res) => {
   }
 };
 
+const updateManuscriptNumber = async (req, res) => {
+  try {
+    const email = extractEmailFromToken(req, res);
+    if (res.statusCode === 401) return;
+
+    // Only admins can change the manuscript number
+    const isAdmin = await isAdminByEmail(email);
+    if (!isAdmin) {
+      res.status(401).json({ message: "Unauthorized to change manuscript number" });
+      return;
+    }
+
+    const currentId = req.params.id;
+    const newId = (req.body.newId || "").trim();
+
+    // Validate format YY-NNNN (e.g. 25-0001)
+    if (!/^\d{2}-\d{4}$/.test(newId)) {
+      res.status(400).json({
+        message: "Manuscript number must be in the format YY-NNNN (e.g. 25-0001)",
+      });
+      return;
+    }
+    if (newId === currentId) {
+      res.status(400).json({ message: "New manuscript number is the same as the current one" });
+      return;
+    }
+
+    // Ensure the current manuscript exists
+    const existingDoc = await ManuscriptSubmissions.findById(currentId).lean();
+    if (!existingDoc) {
+      res.status(404).json({ message: "Manuscript not found" });
+      return;
+    }
+
+    // Ensure the target number is not already taken
+    const conflict = await ManuscriptSubmissions.findById(newId).lean();
+    if (conflict) {
+      res.status(409).json({ message: `Manuscript number ${newId} already exists` });
+      return;
+    }
+
+    // _id is immutable in MongoDB, so clone the document under the new _id
+    // (raw insert preserves the original createdAt/updatedAt), then delete the old one.
+    const clone = { ...existingDoc, _id: newId };
+    await ManuscriptSubmissions.collection.insertOne(clone);
+    await ManuscriptSubmissions.deleteOne({ _id: currentId });
+
+    telemetry.track("audit", {
+      action: "manuscript_number_changed",
+      email,
+      oldId: currentId,
+      newId,
+    });
+
+    res.status(200).json({
+      message: "Manuscript number updated successfully",
+      oldId: currentId,
+      newId,
+    });
+  } catch (error) {
+    console.error("Error updating manuscript number:", error);
+    telemetry.captureException(error, { tags: { action: "manuscript_number_changed" } });
+    res.status(500).json({ message: "Error updating manuscript number: " + error });
+  }
+};
+
 const addAssociateEditor = async (req, res) => {
   try {
     const email = extractEmailFromToken(req, res);
@@ -1200,6 +1266,7 @@ module.exports = {
   addStream,
   getArchivedManuscripts,
   updateArchiveDetails,
+  updateManuscriptNumber,
   addAssociateEditor,
   addManagingEditor,
   deleteReview,

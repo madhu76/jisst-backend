@@ -40,6 +40,9 @@ router.patch('/manuscript/:id',upload.array('files'), controller.updateManuscrip
 router.patch('/manuscript/revision/:id',upload.single('file'), controller.submitRevision);
 
 router.patch('/manuscript/editors/:id', jsonParser, controller.updateEditorsInManuscript);
+
+// updateManuscriptNumber (admin only)
+router.patch('/manuscript/number/:id', jsonParser, controller.updateManuscriptNumber);
 // getAssociateEditors
 router.get('/associateeditors', controller.getAssociateEditors);
 // addAssociateEditor (admin only)
