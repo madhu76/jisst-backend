@@ -429,8 +429,9 @@ const submitRevision = async (req, res) => {
   try {
     const email = extractEmailFromToken(req, res);
     if (res.statusCode === 401) return;
-    // return error if not author
-    if (email != req.body.submittedBy) {
+    const isAdmin = await isAdminByEmail(email);
+    // return error if not the submitting author or an admin
+    if (email != req.body.submittedBy && !isAdmin) {
       res.status(401).json({ message: "Unauthorized to submit revision" });
       return;
     }
@@ -456,7 +457,7 @@ const submitRevision = async (req, res) => {
       toString,
       email,
       `Revision Submitted`,
-      `Revision for Manuscript No. ${submissionId} has been submitted by the author. Please review the revision.`
+      `Revision for Manuscript No. ${submissionId} has been submitted by ${isAdmin ? "an admin" : "the author"}. Please review the revision.`
     );
     telemetry.track("audit", {
       action: "revision_submitted",
