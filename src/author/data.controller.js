@@ -458,7 +458,7 @@ const submitRevision = async (req, res) => {
       toString,
       email,
       `Revision Submitted`,
-      `Revision for Manuscript No. ${submissionId} has been submitted by ${isAdmin ? "an admin" : "the author"}. Please review the revision.`
+      `Revision for Manuscript No. ${submissionId} has been submitted by ${isSubmittedByAuthor ? "the author" : "an admin"}. Please review the revision.`
     );
     telemetry.track("audit", {
       action: "revision_submitted",
