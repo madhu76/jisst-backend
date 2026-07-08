@@ -429,11 +429,14 @@ const submitRevision = async (req, res) => {
   try {
     const email = extractEmailFromToken(req, res);
     if (res.statusCode === 401) return;
-    // return error if not author
-    if (email != req.body.submittedBy) {
+    const isAdmin = await isAdminByEmail(email);
+    const isOriginalSubmitter = email === req.body.submittedBy;
+    // return error if not the submitting author or an admin
+    if (!isOriginalSubmitter && !isAdmin) {
       res.status(401).json({ message: "Unauthorized to submit revision" });
       return;
     }
+    const submitterType = isOriginalSubmitter ? "the author" : "an admin";
 
     //Upload file to Cloudinary
     const revisionUploadResult = await cloudinary.uploader.upload(
@@ -456,7 +459,7 @@ const submitRevision = async (req, res) => {
       toString,
       email,
       `Revision Submitted`,
-      `Revision for Manuscript No. ${submissionId} has been submitted by the author. Please review the revision.`
+      `Revision for Manuscript No. ${submissionId} has been submitted by ${submitterType}. Please review the revision.`
     );
     telemetry.track("audit", {
       action: "revision_submitted",
