@@ -429,9 +429,10 @@ const submitRevision = async (req, res) => {
   try {
     const email = extractEmailFromToken(req, res);
     if (res.statusCode === 401) return;
-    const isAdmin = await isAdminByEmail(email);
+    const isSubmittedByAuthor = email === req.body.submittedBy;
+    const isAdmin = isSubmittedByAuthor ? false : await isAdminByEmail(email);
     // return error if not the submitting author or an admin
-    if (email != req.body.submittedBy && !isAdmin) {
+    if (!isSubmittedByAuthor && !isAdmin) {
       res.status(401).json({ message: "Unauthorized to submit revision" });
       return;
     }
