@@ -594,7 +594,9 @@ const updateEditorsInManuscript = async (req, res) => {
     }
 
     const submissionId = req.params.id;
-    const managingEditor = email;
+    // Admins may explicitly assign a managing editor; otherwise default to the
+    // acting admin's email (preserves previous behaviour).
+    const managingEditor = req.body.managingEditor || email;
     const associateEditor = req.body.associateEditor;
     const result = await ManuscriptSubmissions.findByIdAndUpdate(submissionId, {
       managingEditor: managingEditor,
