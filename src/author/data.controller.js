@@ -126,7 +126,7 @@ JISST Editorial Team`;
 
 const editorUpdatedEmailTemplate = (submissionId, associateEditor, managingEditor) => {
   return `Greetings of the day!<br>
-  You have been assigned as the Associate Editor for the Manuscript No. ${submissionId} by ${managingEditor}.<br>
+  You have been assigned as the Associate Editor (${associateEditor}) for the Manuscript No. ${submissionId} by ${managingEditor}.<br>
   Please login to the system and do the needful.<br>
   Link: https://www.jisst.com/my-submissions<br>
   <br>
@@ -141,8 +141,6 @@ const editorUnassignedEmailTemplate = (submissionId) => {
   Thanks!<br>
   JISST Editorial Team`;
 };
-
-const normalizeEmail = (value) => (typeof value === "string" ? value.trim().toLowerCase() : "");
 
 const displayArticle = async (req, res, next) => {
   try {
@@ -619,6 +617,8 @@ const updateEditorsInManuscript = async (req, res) => {
       res.status(404).json({ message: "Manuscript not found" });
       return;
     }
+    const normalizeEmail = (value) =>
+      typeof value === "string" ? value.trim().toLowerCase() : "";
     const previousAssociateEditor = result.associateEditor?.trim() || "";
     const isAssociateEditorChanged =
       normalizeEmail(previousAssociateEditor) !== normalizeEmail(associateEditor);
