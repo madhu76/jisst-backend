@@ -124,13 +124,21 @@ Regards,
 JISST Editorial Team`;
 };
 
-const editorUpdatedEmailTemplate = (submissionId, managingEditor) => {
+const editorUpdatedEmailTemplate = (submissionId, associateEditor, managingEditor) => {
   return `Greetings of the day!<br>
-  You have been assigned as the Associate Editor for the Manuscript No. ${submissionId} by ${managingEditor}.<br>
+  You have been assigned as the Associate Editor (${associateEditor}) for the Manuscript No. ${submissionId} by ${managingEditor}.<br>
   Please login to the system and do the needful.<br>
   Link: https://www.jisst.com/my-submissions<br>
   <br>
   Regards,<br>
+  JISST Editorial Team`;
+};
+
+const editorUnassignedEmailTemplate = (submissionId) => {
+  return `Dear Editor:<br>
+  You have been unassigned from the manuscript No. ${submissionId} and are no longer responsible for processing this manuscript.<br>
+  <br>
+  Thanks!<br>
   JISST Editorial Team`;
 };
 
@@ -597,17 +605,41 @@ const updateEditorsInManuscript = async (req, res) => {
     // Admins may explicitly assign a managing editor; otherwise default to the
     // acting admin's email (preserves previous behaviour).
     const managingEditor = req.body.managingEditor || email;
-    const associateEditor = req.body.associateEditor;
+    const associateEditor =
+      typeof req.body.associateEditor === "string"
+        ? req.body.associateEditor.trim()
+        : "";
     const result = await ManuscriptSubmissions.findByIdAndUpdate(submissionId, {
       managingEditor: managingEditor,
       associateEditor: associateEditor,
     });
-    await sendMail(
-      associateEditor,
-      managingEditor,
-      `Action Required: Manuscript Assigned`,
-      editorUpdatedEmailTemplate(submissionId, associateEditor, managingEditor)
-    );
+    if (!result) {
+      res.status(404).json({ message: "Manuscript not found" });
+      return;
+    }
+    const normalizeEmail = (value) =>
+      typeof value === "string" ? value.trim().toLowerCase() : "";
+    const previousAssociateEditor = result.associateEditor?.trim() || "";
+    const isAssociateEditorChanged =
+      normalizeEmail(previousAssociateEditor) !== normalizeEmail(associateEditor);
+
+    if (previousAssociateEditor && isAssociateEditorChanged) {
+      await sendMail(
+        previousAssociateEditor,
+        managingEditor,
+        `Associate Editor Assignment Removed`,
+        editorUnassignedEmailTemplate(submissionId)
+      );
+    }
+
+    if (associateEditor && isAssociateEditorChanged) {
+      await sendMail(
+        associateEditor,
+        managingEditor,
+        `Action Required: Manuscript Assigned`,
+        editorUpdatedEmailTemplate(submissionId, associateEditor, managingEditor)
+      );
+    }
     res.status(200).json(result);
   } catch (error) {
     console.error("Error updating manuscript:", error);
