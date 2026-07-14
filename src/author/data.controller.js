@@ -124,7 +124,7 @@ Regards,
 JISST Editorial Team`;
 };
 
-const editorUpdatedEmailTemplate = (submissionId, managingEditor) => {
+const editorUpdatedEmailTemplate = (submissionId, associateEditor, managingEditor) => {
   return `Greetings of the day!<br>
   You have been assigned as the Associate Editor for the Manuscript No. ${submissionId} by ${managingEditor}.<br>
   Please login to the system and do the needful.<br>
@@ -633,7 +633,7 @@ const updateEditorsInManuscript = async (req, res) => {
         associateEditor,
         managingEditor,
         `Action Required: Manuscript Assigned`,
-        editorUpdatedEmailTemplate(submissionId, managingEditor)
+        editorUpdatedEmailTemplate(submissionId, associateEditor, managingEditor)
       );
     }
     res.status(200).json(result);
