@@ -134,6 +134,14 @@ const editorUpdatedEmailTemplate = (submissionId, managingEditor) => {
   JISST Editorial Team`;
 };
 
+const editorUnassignedEmailTemplate = (submissionId) => {
+  return `Dear Editor:<br>
+  You are unassigned from the assignment of the manuscript No. ${submissionId} and you are no longer responsible to process this manuscript.<br>
+  <br>
+  Thanks!<br>
+  JISST Editorial Team`;
+};
+
 const displayArticle = async (req, res, next) => {
   try {
     const article = await Articlesubmission.findOne(
@@ -597,17 +605,34 @@ const updateEditorsInManuscript = async (req, res) => {
     // Admins may explicitly assign a managing editor; otherwise default to the
     // acting admin's email (preserves previous behaviour).
     const managingEditor = req.body.managingEditor || email;
-    const associateEditor = req.body.associateEditor;
+    const associateEditor = req.body.associateEditor?.trim() || "";
     const result = await ManuscriptSubmissions.findByIdAndUpdate(submissionId, {
       managingEditor: managingEditor,
       associateEditor: associateEditor,
     });
-    await sendMail(
-      associateEditor,
-      managingEditor,
-      `Action Required: Manuscript Assigned`,
-      editorUpdatedEmailTemplate(submissionId, associateEditor, managingEditor)
-    );
+    const previousAssociateEditor = result?.associateEditor?.trim() || "";
+    const previousAssociateEditorLower = previousAssociateEditor.toLowerCase();
+    const associateEditorLower = associateEditor.toLowerCase();
+    const isAssociateEditorChanged =
+      previousAssociateEditorLower !== associateEditorLower;
+
+    if (previousAssociateEditor && isAssociateEditorChanged) {
+      await sendMail(
+        previousAssociateEditor,
+        managingEditor,
+        `Associate Editor Assignment Removed`,
+        editorUnassignedEmailTemplate(submissionId)
+      );
+    }
+
+    if (associateEditor && isAssociateEditorChanged) {
+      await sendMail(
+        associateEditor,
+        managingEditor,
+        `Action Required: Manuscript Assigned`,
+        editorUpdatedEmailTemplate(submissionId, managingEditor)
+      );
+    }
     res.status(200).json(result);
   } catch (error) {
     console.error("Error updating manuscript:", error);
