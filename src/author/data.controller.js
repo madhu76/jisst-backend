@@ -615,7 +615,11 @@ const updateEditorsInManuscript = async (req, res) => {
       managingEditor: managingEditor,
       associateEditor: associateEditor,
     });
-    const previousAssociateEditor = result?.associateEditor?.trim() || "";
+    if (!result) {
+      res.status(404).json({ message: "Manuscript not found" });
+      return;
+    }
+    const previousAssociateEditor = result.associateEditor?.trim() || "";
     const isAssociateEditorChanged =
       normalizeEmail(previousAssociateEditor) !== normalizeEmail(associateEditor);
 
