@@ -83,14 +83,23 @@ const acceptedSubmissionEmailTemplate = (
   correspondingAuthorName
 ) => {
   return `Dear Authors:<br>
-Upon the recommendation of the review committee, we have pleasure in communicating the acceptance of your manuscript titled “${title}”, for publication in the Journal of Innovation Sciences and Sustainable Technologies. 
-This journal requires papers to be type set in LaTex format. For your guidance, Template/Sample files are attached to this mail. Please follow the text width and height specifications as suggested in the Template/Sample files.
-Please return your Latex, pdf files along with clean and quality figures and tables to the below E-mail address no later than 2 weeks from the date of receipt of this communication.<br>
-Also please download the appropriate copyright transfer statement and return the duly signed document.<br>
-If you want to place your article in open access category, please download the form <a href='https://res.cloudinary.com/jisst/image/upload/v1722785715/Copyright%20Docs%20for%20Accepted%20Emails/Copyright-OA.pdf'>Copyright-OA.pdf</a>. Open access category articles have a very nominal fee payable by the Authors/Institutions/Research Funding Agencies. 
-For the open access publication charges please write to the below mentioned E-mail. The authors of open access publications enjoy special privileges as explained in the copyright statement. 
+Upon the recommendation of the review committee, we have pleasure in communicating the acceptance of your manuscript titled "${title}", for publication in the Journal of Innovation Sciences and Sustainable Technologies.
+This journal requires papers to be type set in LaTex format. For your guidance, Template/Sample files are attached to this mail.<br>
+<br>
+<b>Important:</b><br>
+<ul>
+<li>Follow the text width and height specifications as suggested in the Template/Sample files.</li>
+<li>Indentation of the paragraphs should be as suggested in the template files.</li>
+<li>Captions of the Figures and Tables should be below them as mentioned in the template files.</li>
+<li>References should be as in the format specified in the template files.</li>
+<li>Download the appropriate copyright transfer statement and return the duly signed document.</li>
+</ul>
+If you want to place your article in open access category, please download the form <a href='https://res.cloudinary.com/jisst/image/upload/v1722785715/Copyright%20Docs%20for%20Accepted%20Emails/Copyright-OA.pdf'>Copyright-OA.pdf</a>. Open access category articles have a very nominal fee payable by the Authors/Institutions/Research Funding Agencies.
+For the open access publication charges please write to the below mentioned E-mail. The authors of open access publications enjoy special privileges as explained in the copyright statement.
 Otherwise, use the form <a href='https://res.cloudinary.com/jisst/image/upload/v1722785590/Copyright%20Docs%20for%20Accepted%20Emails/Copyright-General.pdf'>Copyright-General.pdf</a>.<br>
-Please E-mail all these documents to: jisst@researchfoundation.in<br>
+<br>
+Please return your Latex, pdf files along with clean and quality figures and tables to the E-mail address: jisst@researchfoundation.in<br>
+no later than 2 weeks from the date of receipt of this communication.<br>
 <br>
 Sincerely,<br>
 Editorial TEAM, JISST
