@@ -136,11 +136,13 @@ const editorUpdatedEmailTemplate = (submissionId, managingEditor) => {
 
 const editorUnassignedEmailTemplate = (submissionId) => {
   return `Dear Editor:<br>
-  You are unassigned from the assignment of the manuscript No. ${submissionId} and you are no longer responsible to process this manuscript.<br>
+  You have been unassigned from the manuscript No. ${submissionId} and are no longer responsible for processing this manuscript.<br>
   <br>
   Thanks!<br>
   JISST Editorial Team`;
 };
+
+const normalizeEmail = (value) => (typeof value === "string" ? value.trim().toLowerCase() : "");
 
 const displayArticle = async (req, res, next) => {
   try {
@@ -605,16 +607,17 @@ const updateEditorsInManuscript = async (req, res) => {
     // Admins may explicitly assign a managing editor; otherwise default to the
     // acting admin's email (preserves previous behaviour).
     const managingEditor = req.body.managingEditor || email;
-    const associateEditor = req.body.associateEditor?.trim() || "";
+    const associateEditor =
+      typeof req.body.associateEditor === "string"
+        ? req.body.associateEditor.trim()
+        : "";
     const result = await ManuscriptSubmissions.findByIdAndUpdate(submissionId, {
       managingEditor: managingEditor,
       associateEditor: associateEditor,
     });
     const previousAssociateEditor = result?.associateEditor?.trim() || "";
-    const previousAssociateEditorLower = previousAssociateEditor.toLowerCase();
-    const associateEditorLower = associateEditor.toLowerCase();
     const isAssociateEditorChanged =
-      previousAssociateEditorLower !== associateEditorLower;
+      normalizeEmail(previousAssociateEditor) !== normalizeEmail(associateEditor);
 
     if (previousAssociateEditor && isAssociateEditorChanged) {
       await sendMail(
