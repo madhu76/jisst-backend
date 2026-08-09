@@ -16,6 +16,8 @@ const manuscriptSubmissionSchema = new mongoose.Schema({
   associateEditor: String,
   reviewUrls: [String],
   revisionUrls: [String],
+  reviewLabels: [{ url: String, label: String, _id: false }],
+  revisionLabels: [{ url: String, label: String, _id: false }],
   articleType: String,
   articleStream: String,
   volume: String,

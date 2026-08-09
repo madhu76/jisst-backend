@@ -62,6 +62,10 @@ router.post('/streams', jsonParser, controller.addStream);
 router.delete('/manuscript/:id/review', jsonParser, controller.deleteReview);
 router.delete('/manuscript/:id/revision', jsonParser, controller.deleteRevision);
 
+// Rename reviews / revisions (admin and associate editors)
+router.patch('/manuscript/:id/review-label', jsonParser, controller.renameReview);
+router.patch('/manuscript/:id/revision-label', jsonParser, controller.renameRevision);
+
 // Archive routes - for accepted manuscripts with volume/issue
 router.get('/archived', controller.getArchivedManuscripts);
 router.patch('/archived/:id', jsonParser, controller.updateArchiveDetails);

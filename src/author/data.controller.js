@@ -1222,7 +1222,7 @@ const deleteReview = async (req, res) => {
 
     const result = await ManuscriptSubmissions.findByIdAndUpdate(
       submissionId,
-      { $pull: { reviewUrls: url } },
+      { $pull: { reviewUrls: url, reviewLabels: { url } } },
       { new: true }
     );
     if (!result) {
@@ -1266,7 +1266,7 @@ const deleteRevision = async (req, res) => {
 
     const result = await ManuscriptSubmissions.findByIdAndUpdate(
       submissionId,
-      { $pull: { revisionUrls: url } },
+      { $pull: { revisionUrls: url, revisionLabels: { url } } },
       { new: true }
     );
     if (!result) {
@@ -1286,6 +1286,124 @@ const deleteRevision = async (req, res) => {
     console.error("Error deleting revision:", error);
     telemetry.captureException(error, { tags: { action: "revision_deleted" } });
     res.status(500).json({ message: "Error deleting revision: " + error });
+  }
+};
+
+const renameReview = async (req, res) => {
+  try {
+    const email = extractEmailFromToken(req, res);
+    if (res.statusCode === 401) return;
+
+    // Admins and associate editors can rename reviews
+    const isAdmin = await isAdminByEmail(email);
+    const isAssociateEditor = await isAssociateEditorByEmail(email);
+    if (!isAdmin && !isAssociateEditor) {
+      res.status(401).json({ message: "Unauthorized to rename review" });
+      return;
+    }
+
+    const submissionId = req.params.id;
+    const { url } = req.body;
+    const label = typeof req.body.label === "string" ? req.body.label.trim() : "";
+    if (!url) {
+      res.status(400).json({ message: "Review url is required" });
+      return;
+    }
+
+    const manuscript = await ManuscriptSubmissions.findById(submissionId);
+    if (!manuscript) {
+      res.status(404).json({ message: "Manuscript not found" });
+      return;
+    }
+    if (!manuscript.reviewUrls || !manuscript.reviewUrls.includes(url)) {
+      res.status(404).json({ message: "Review not found on this manuscript" });
+      return;
+    }
+
+    // Remove any existing label for this url, then add the new one (unless empty = reset to default)
+    await ManuscriptSubmissions.findByIdAndUpdate(submissionId, {
+      $pull: { reviewLabels: { url } },
+    });
+    const result = label
+      ? await ManuscriptSubmissions.findByIdAndUpdate(
+          submissionId,
+          { $push: { reviewLabels: { url, label } } },
+          { new: true }
+        )
+      : await ManuscriptSubmissions.findById(submissionId);
+
+    telemetry.track("audit", {
+      action: "review_renamed",
+      email,
+      submissionId,
+      url,
+      label,
+    });
+
+    res.status(200).json({ message: "Review renamed successfully", manuscript: result });
+  } catch (error) {
+    console.error("Error renaming review:", error);
+    telemetry.captureException(error, { tags: { action: "review_renamed" } });
+    res.status(500).json({ message: "Error renaming review: " + error });
+  }
+};
+
+const renameRevision = async (req, res) => {
+  try {
+    const email = extractEmailFromToken(req, res);
+    if (res.statusCode === 401) return;
+
+    // Admins and associate editors can rename revisions
+    const isAdmin = await isAdminByEmail(email);
+    const isAssociateEditor = await isAssociateEditorByEmail(email);
+    if (!isAdmin && !isAssociateEditor) {
+      res.status(401).json({ message: "Unauthorized to rename revision" });
+      return;
+    }
+
+    const submissionId = req.params.id;
+    const { url } = req.body;
+    const label = typeof req.body.label === "string" ? req.body.label.trim() : "";
+    if (!url) {
+      res.status(400).json({ message: "Revision url is required" });
+      return;
+    }
+
+    const manuscript = await ManuscriptSubmissions.findById(submissionId);
+    if (!manuscript) {
+      res.status(404).json({ message: "Manuscript not found" });
+      return;
+    }
+    if (!manuscript.revisionUrls || !manuscript.revisionUrls.includes(url)) {
+      res.status(404).json({ message: "Revision not found on this manuscript" });
+      return;
+    }
+
+    // Remove any existing label for this url, then add the new one (unless empty = reset to default)
+    await ManuscriptSubmissions.findByIdAndUpdate(submissionId, {
+      $pull: { revisionLabels: { url } },
+    });
+    const result = label
+      ? await ManuscriptSubmissions.findByIdAndUpdate(
+          submissionId,
+          { $push: { revisionLabels: { url, label } } },
+          { new: true }
+        )
+      : await ManuscriptSubmissions.findById(submissionId);
+
+    telemetry.track("audit", {
+      action: "revision_renamed",
+      email,
+      submissionId,
+      url,
+      label,
+    });
+
+    res.status(200).json({ message: "Revision renamed successfully", manuscript: result });
+  } catch (error) {
+    console.error("Error renaming revision:", error);
+    telemetry.captureException(error, { tags: { action: "revision_renamed" } });
+    res.status(500).json({ message: "Error renaming revision: " + error });
   }
 };
 
@@ -1317,4 +1435,6 @@ module.exports = {
   addManagingEditor,
   deleteReview,
   deleteRevision,
+  renameReview,
+  renameRevision,
 };
