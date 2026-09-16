@@ -331,21 +331,20 @@ const submitManuscript = async (req, res) => {
       folder: "ManuscriptSubmissions",
     });
     const generateCustomId = async () => {
-      //Get Latest _Id in the format <year>-<number> and increment the <number> by 1
-      let year = new Date().getFullYear().toString().slice(-2);
-      let latestResult = await ManuscriptSubmissions.findOne(
-        {},
+      // Take the highest number already used for the current year instead of the
+      // most recently created document, whose _id may have been renamed to
+      // another year and would otherwise restart the counter at 0001.
+      const year = new Date().getFullYear().toString().slice(-2);
+      const latestResult = await ManuscriptSubmissions.findOne(
+        { _id: { $regex: `^${year}-\\d{4}$` } },
         { _id: 1 },
-        { sort: { createdAt: -1 } }
+        { sort: { _id: -1 } }
       );
-      let latestId = latestResult._id;
-      let latestYear = latestId.split("-")[0];
-      let latestNumber = latestId.split("-")[1];
-      if (year !== latestYear) {
+      if (!latestResult) {
         return `${year}-0001`;
       }
-      let newNumber = parseInt(latestNumber) + 1;
-      return `${year}-${newNumber.toString().padStart(4, "0")}`;
+      const latestNumber = parseInt(latestResult._id.split("-")[1], 10);
+      return `${year}-${(latestNumber + 1).toString().padStart(4, "0")}`;
     };
 
     const customId = await generateCustomId();
