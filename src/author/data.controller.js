@@ -413,9 +413,10 @@ const getManuscripts = async (req, res) => {
     let manuscripts = [];
 
     if (!isAdmin && !isAssociateEditor) {
+      // Reviewer identities are confidential and must not be exposed to authors
       manuscripts = await ManuscriptSubmissions.find({
         submittedBy: email,
-      }).exec();
+      }).select("-reviewers").exec();
       let coAuthorManuscripts = await ManuscriptSubmissions.find(
         {
           articleAuthorEmails: {
@@ -1406,6 +1407,75 @@ const renameRevision = async (req, res) => {
   }
 };
 
+const MAX_REVIEWERS = 3;
+const REVIEWER_EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const updateReviewers = async (req, res) => {
+  try {
+    const email = extractEmailFromToken(req, res);
+    if (res.statusCode === 401) return;
+
+    const isAdmin = await isAdminByEmail(email);
+    const isAssociateEditor = await isAssociateEditorByEmail(email);
+    if (!isAdmin && !isAssociateEditor) {
+      res.status(401).json({ message: "Unauthorized to update reviewers" });
+      return;
+    }
+
+    if (!Array.isArray(req.body.reviewers)) {
+      res.status(400).json({ message: "reviewers must be an array" });
+      return;
+    }
+
+    const reviewers = req.body.reviewers
+      .map((r) => ({
+        name: typeof r?.name === "string" ? r.name.trim() : "",
+        email: typeof r?.email === "string" ? r.email.trim() : "",
+      }))
+      .filter((r) => r.name || r.email);
+
+    if (reviewers.length > MAX_REVIEWERS) {
+      res.status(400).json({ message: `A maximum of ${MAX_REVIEWERS} reviewers is allowed` });
+      return;
+    }
+    const invalid = reviewers.find((r) => !r.name || !REVIEWER_EMAIL_REGEX.test(r.email));
+    if (invalid) {
+      res.status(400).json({ message: "Each reviewer requires a name and a valid e-mail" });
+      return;
+    }
+
+    const submissionId = req.params.id;
+    const manuscript = await ManuscriptSubmissions.findById(submissionId);
+    if (!manuscript) {
+      res.status(404).json({ message: "Manuscript not found" });
+      return;
+    }
+    if (!isAdmin && manuscript.associateEditor !== email) {
+      res.status(401).json({ message: "Unauthorized to update reviewers for this manuscript" });
+      return;
+    }
+
+    const result = await ManuscriptSubmissions.findByIdAndUpdate(
+      submissionId,
+      { reviewers },
+      { new: true }
+    );
+
+    telemetry.track("audit", {
+      action: "reviewers_updated",
+      email,
+      submissionId,
+      reviewerCount: reviewers.length,
+    });
+
+    res.status(200).json({ message: "Reviewers updated successfully", manuscript: result });
+  } catch (error) {
+    console.error("Error updating reviewers:", error);
+    telemetry.captureException(error, { tags: { action: "reviewers_updated" } });
+    res.status(500).json({ message: "Error updating reviewers: " + error });
+  }
+};
+
 
 module.exports = {
   get,
@@ -1436,4 +1506,5 @@ module.exports = {
   deleteRevision,
   renameReview,
   renameRevision,
+  updateReviewers,
 };
